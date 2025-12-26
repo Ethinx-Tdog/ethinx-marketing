@@ -24,7 +24,7 @@ export function SectionHeading({
       )}
     >
       {badge && (
-        <span className="inline-block mb-4 px-3 py-1 text-xs font-semibold tracking-wider uppercase bg-primary/10 text-primary rounded-full border border-primary/20">
+        <span className="inline-block mb-4 px-4 py-1.5 text-xs font-semibold tracking-widest uppercase text-gold bg-gold/10 rounded-full border border-gold/20">
           {badge}
         </span>
       )}
@@ -32,8 +32,10 @@ export function SectionHeading({
         {title}
       </h2>
       {description && (
-        <p className="text-lg text-muted-foreground">{description}</p>
+        <p className="text-lg text-muted-foreground leading-relaxed">{description}</p>
       )}
     </div>
   );
 }
+
+export default SectionHeading;

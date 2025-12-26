@@ -1,15 +1,27 @@
-import { Upload, Sparkles, Download } from "lucide-react";
+import { Upload, Sparkles, Palette, Download } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
-const steps = [
+interface Step {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+const steps: Step[] = [
   {
     icon: Upload,
     title: "Upload Your Photos",
     description: "Share 10-20 selfies from different angles. We'll use these to train your personal AI model.",
   },
   {
+    icon: Palette,
+    title: "Choose Your Style",
+    description: "Select backgrounds, outfits, and settings that match your professional needs.",
+  },
+  {
     icon: Sparkles,
-    title: "AI Magic Happens",
-    description: "Our AI creates studio-quality headshots with perfect lighting, backgrounds, and professional styling.",
+    title: "AI Generates Magic",
+    description: "Our AI creates studio-quality headshots with perfect lighting and professional styling.",
   },
   {
     icon: Download,
@@ -20,32 +32,34 @@ const steps = [
 
 export function HowItWorksSteps() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-      {steps.map((step, idx) => (
-        <div key={idx} className="relative text-center">
-          {/* Connector line */}
-          {idx < steps.length - 1 && (
-            <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-gradient-to-r from-primary/50 to-transparent" />
-          )}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+      {steps.map((step, idx) => {
+        const IconComponent = step.icon;
+        return (
+          <div key={idx} className="relative text-center">
+            {idx < steps.length - 1 && (
+              <div className="hidden lg:block absolute top-12 left-[60%] w-[80%] h-px bg-gradient-to-r from-gold/30 to-transparent" />
+            )}
 
-          {/* Step number */}
-          <div className="relative inline-flex items-center justify-center mb-6">
-            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" />
-            <div className="relative h-24 w-24 rounded-full bg-gradient-gold flex items-center justify-center">
-              <step.icon className="h-10 w-10 text-primary-foreground" />
+            <div className="relative inline-flex items-center justify-center mb-6">
+              <div className="absolute inset-0 bg-gold/10 rounded-full blur-xl scale-150" />
+              <div className="relative h-20 w-20 rounded-full bg-secondary border border-gold/20 flex items-center justify-center">
+                <IconComponent className="h-8 w-8 text-gold" />
+              </div>
+              <span className="absolute -top-1 -right-1 h-7 w-7 rounded-full bg-gold text-charcoal flex items-center justify-center text-sm font-bold">
+                {idx + 1}
+              </span>
             </div>
-            <span className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border-2 border-primary flex items-center justify-center text-sm font-bold text-primary">
-              {idx + 1}
-            </span>
-          </div>
 
-          {/* Content */}
-          <h3 className="text-xl font-display font-semibold text-foreground mb-3">
-            {step.title}
-          </h3>
-          <p className="text-muted-foreground">{step.description}</p>
-        </div>
-      ))}
+            <h3 className="text-lg font-display font-semibold text-foreground mb-3">
+              {step.title}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
+
+export default HowItWorksSteps;

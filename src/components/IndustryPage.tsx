@@ -33,30 +33,29 @@ export function IndustryPage({
     <>
       <SEO title={title} description={metaDescription} />
 
-      <section className="py-20 md:py-32">
+      <section className="py-20 md:py-32 bg-gradient-radial">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Content */}
             <div>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6 leading-tight">
                 {headline}
               </h1>
-              <p className="text-lg text-muted-foreground mb-8">
+              <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
                 {subheadline}
               </p>
 
               <ul className="space-y-4 mb-8">
                 {benefits.map((benefit, idx) => (
                   <li key={idx} className="flex items-start gap-3">
-                    <span className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                      <span className="h-2 w-2 rounded-full bg-primary" />
+                    <span className="h-6 w-6 rounded-full bg-gold/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="h-2 w-2 rounded-full bg-gold" />
                     </span>
                     <span className="text-foreground">{benefit}</span>
                   </li>
                 ))}
               </ul>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <Button variant="gold" size="lg" asChild>
                   <a href="https://app.ethinx.solutions/start" className="group">
                     Get Started
@@ -65,13 +64,11 @@ export function IndustryPage({
                 </Button>
               </div>
 
-              {/* Trust Badge */}
-              <div className="mt-8 pt-8 border-t border-border">
+              <div className="pt-8 border-t border-border/50">
                 <TrustBadge variant="tdog" />
               </div>
             </div>
 
-            {/* Before/After Slider */}
             <div className="lg:order-first">
               <BeforeAfterSlider
                 beforeImage={beforeImage}
@@ -83,11 +80,10 @@ export function IndustryPage({
         </div>
       </section>
 
-      {/* Testimonial */}
-      <section className="py-20 md:py-32 bg-card/50">
+      <section className="py-20 md:py-32 bg-secondary/30">
         <div className="container max-w-3xl">
           <blockquote className="text-center">
-            <p className="font-display text-2xl md:text-3xl text-foreground mb-6">
+            <p className="font-display text-xl md:text-2xl text-foreground mb-6 leading-relaxed">
               "{testimonial.quote}"
             </p>
             <footer>
@@ -102,3 +98,5 @@ export function IndustryPage({
     </>
   );
 }
+
+export default IndustryPage;
