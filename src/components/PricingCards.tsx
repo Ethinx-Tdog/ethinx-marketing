@@ -20,6 +20,7 @@ const plans: PricingPlan[] = [
       "3 background options",
       "2 outfit styles",
       "24-hour delivery",
+      "Commercial usage rights",
     ],
   },
   {
@@ -34,6 +35,7 @@ const plans: PricingPlan[] = [
       "12-hour priority delivery",
       "LinkedIn banner included",
       "Profile optimization tips",
+      "Commercial usage rights",
     ],
   },
   {
@@ -44,10 +46,11 @@ const plans: PricingPlan[] = [
       "40 professional headshots",
       "Unlimited backgrounds",
       "8 outfit styles",
-      '15 "impossible location" lifestyle shots',
+      "15 lifestyle location shots",
       "Complete social media pack",
       "Dating profile kit",
       "Team discounts available",
+      "Commercial usage rights",
     ],
   },
 ];
@@ -61,19 +64,19 @@ export function PricingCards() {
           className={cn(
             "relative flex flex-col p-6 lg:p-8 rounded-2xl border transition-all duration-300 hover-lift",
             plan.popular
-              ? "bg-gradient-to-b from-primary/10 to-card border-primary/50"
-              : "bg-card border-border"
+              ? "bg-gradient-to-b from-gold/10 to-card border-gold/30 shadow-gold"
+              : "bg-card border-border/50 hover:border-gold/20"
           )}
         >
           {plan.popular && (
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-gradient-gold text-primary-foreground px-4 py-1.5 rounded-full text-sm font-semibold">
-              <Star className="h-4 w-4" />
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-gradient-gold text-charcoal px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">
+              <Star className="h-3.5 w-3.5" />
               Most Popular
             </div>
           )}
 
           <div className="mb-6">
-            <h3 className="text-xl font-display font-semibold text-foreground mb-2">
+            <h3 className="text-lg font-display font-semibold text-foreground mb-3">
               {plan.name}
             </h3>
             <div className="flex items-baseline gap-1">
@@ -87,7 +90,7 @@ export function PricingCards() {
           <ul className="flex-1 space-y-3 mb-8">
             {plan.features.map((feature) => (
               <li key={feature} className="flex items-start gap-3">
-                <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <Check className="h-5 w-5 text-gold shrink-0 mt-0.5" />
                 <span className="text-sm text-muted-foreground">{feature}</span>
               </li>
             ))}
@@ -108,3 +111,5 @@ export function PricingCards() {
     </div>
   );
 }
+
+export default PricingCards;

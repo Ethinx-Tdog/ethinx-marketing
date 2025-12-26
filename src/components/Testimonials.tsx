@@ -38,36 +38,32 @@ export function Testimonials() {
       {testimonials.map((testimonial, idx) => (
         <div
           key={idx}
-          className="flex flex-col p-6 lg:p-8 rounded-2xl bg-card border border-border hover-lift"
+          className="flex flex-col p-6 lg:p-8 rounded-2xl bg-secondary/50 border border-border/50 hover-lift"
         >
-          {/* Rating */}
           <div className="flex gap-1 mb-4">
             {Array.from({ length: testimonial.rating }).map((_, i) => (
-              <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+              <Star key={i} className="h-4 w-4 fill-gold text-gold" />
             ))}
           </div>
 
-          {/* Quote */}
-          <blockquote className="flex-1 text-foreground mb-6">
+          <blockquote className="flex-1 text-foreground mb-6 leading-relaxed">
             "{testimonial.quote}"
           </blockquote>
 
-          {/* Author */}
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
-              <span className="text-lg font-semibold text-primary">
+            <div className="h-11 w-11 rounded-full bg-gold/20 flex items-center justify-center">
+              <span className="text-base font-semibold text-gold">
                 {testimonial.author.charAt(0)}
               </span>
             </div>
             <div>
-              <p className="font-semibold text-foreground">{testimonial.author}</p>
-              <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+              <p className="font-medium text-foreground text-sm">{testimonial.author}</p>
+              <p className="text-xs text-muted-foreground">{testimonial.role}</p>
             </div>
           </div>
 
-          {/* Industry tag */}
-          <div className="mt-4 pt-4 border-t border-border">
-            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+          <div className="mt-4 pt-4 border-t border-border/30">
+            <span className="text-xs font-medium text-gold bg-gold/10 px-2.5 py-1 rounded-full">
               {testimonial.industry}
             </span>
           </div>
@@ -76,3 +72,5 @@ export function Testimonials() {
     </div>
   );
 }
+
+export default Testimonials;

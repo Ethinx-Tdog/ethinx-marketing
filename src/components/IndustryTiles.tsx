@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { Building2, Wrench, Heart, Briefcase, UserSearch, Camera, X } from "lucide-react";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { cn } from "@/lib/utils";
+import { LucideIcon } from "lucide-react";
 
 interface Industry {
   id: string;
   name: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   href: string;
   thumbnail: string;
   sliders: Array<{
@@ -53,7 +54,7 @@ const industries: Industry[] = [
   },
   {
     id: "dating",
-    name: "Dating Profiles",
+    name: "Dating",
     icon: Heart,
     href: "/dating-profile-pictures",
     thumbnail: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop",
@@ -127,51 +128,54 @@ export function IndustryTiles() {
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {industries.map((industry) => (
-          <button
-            key={industry.id}
-            onClick={() => setActiveIndustry(industry)}
-            className={cn(
-              "group relative aspect-square rounded-xl overflow-hidden border border-border transition-all duration-300 hover-lift",
-              "bg-card hover:border-primary/50"
-            )}
-          >
-            <img
-              src={industry.thumbnail}
-              alt={industry.name}
-              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
-              <industry.icon className="h-8 w-8 text-primary" />
-              <span className="text-sm font-medium text-foreground text-center">
-                {industry.name}
-              </span>
-            </div>
-          </button>
-        ))}
+        {industries.map((industry) => {
+          const IconComponent = industry.icon;
+          return (
+            <button
+              key={industry.id}
+              onClick={() => setActiveIndustry(industry)}
+              className={cn(
+                "group relative aspect-square rounded-xl overflow-hidden border border-border/50 transition-all duration-300 hover-lift",
+                "bg-secondary hover:border-gold/30"
+              )}
+            >
+              <img
+                src={industry.thumbnail}
+                alt={industry.name}
+                className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/50 to-transparent" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
+                <IconComponent className="h-8 w-8 text-gold" />
+                <span className="text-sm font-medium text-foreground text-center">
+                  {industry.name}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Modal */}
       {activeIndustry && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/90 backdrop-blur-sm"
           onClick={() => setActiveIndustry(null)}
         >
           <div
-            className="relative w-full max-w-4xl bg-card rounded-2xl border border-border p-6 md:p-8 shadow-elevated"
+            className="relative w-full max-w-4xl bg-card rounded-2xl border border-border p-6 md:p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setActiveIndustry(null)}
               className="absolute top-4 right-4 p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
-              aria-label="Close"
+              aria-label="Close modal"
             >
               <X className="h-5 w-5" />
             </button>
 
             <div className="flex items-center gap-3 mb-6">
-              <activeIndustry.icon className="h-6 w-6 text-primary" />
+              <activeIndustry.icon className="h-6 w-6 text-gold" />
               <h3 className="text-xl font-display font-semibold">
                 {activeIndustry.name} Headshots
               </h3>
@@ -192,7 +196,7 @@ export function IndustryTiles() {
             <div className="mt-6 text-center">
               <Link
                 to={activeIndustry.href}
-                className="text-primary hover:underline text-sm font-medium"
+                className="text-gold hover:underline text-sm font-medium"
                 onClick={() => setActiveIndustry(null)}
               >
                 Learn more about {activeIndustry.name.toLowerCase()} headshots →
@@ -204,3 +208,5 @@ export function IndustryTiles() {
     </>
   );
 }
+
+export default IndustryTiles;
