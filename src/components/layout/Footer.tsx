@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { BRAND } from "@/lib/brand";
 
 const footerLinks = [
   { href: "/privacy", label: "Privacy" },
@@ -13,8 +14,8 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           <Link to="/" className="flex items-center">
             <img
-              src="/brand/ethinx-mark.png"
-              alt="ETHINX"
+              src={BRAND.LOGO}
+              alt="ETHINX logo"
               className="h-5 w-auto opacity-60 hover:opacity-100 transition-opacity"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;

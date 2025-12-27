@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { BRAND } from "@/lib/brand";
 
 interface SEOProps {
   title: string;
@@ -11,7 +12,7 @@ export function SEO({
   title,
   description,
   canonical,
-  ogImage = "/brand/ethinx-mark.png",
+  ogImage = BRAND.LOGO,
 }: SEOProps) {
   const fullTitle = title.includes("ETHINX") ? title : `${title} | ETHINX`;
 

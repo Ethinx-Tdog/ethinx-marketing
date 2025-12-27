@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 
 const navLinks = [
   { href: "/pricing", label: "Pricing" },
@@ -20,8 +21,8 @@ export function Header() {
       <div className="container flex h-16 md:h-18 items-center justify-between">
         <Link to="/" className="flex items-center">
           <img
-            src="/brand/ethinx-mark.png"
-            alt="ETHINX"
+            src={BRAND.LOGO}
+            alt="ETHINX logo"
             className="h-7 md:h-8 w-auto"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
