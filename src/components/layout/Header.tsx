@@ -1,23 +1,146 @@
+import { useState, useEffect, useCallback } from "react";
 import { Link, NavLink } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 
+const navLinks = [
+  { to: "/how-it-works", label: "How it works" },
+  { to: "/examples", label: "Examples" },
+  { to: "/pricing", label: "Pricing" },
+  { to: "/faq", label: "FAQ" },
+];
+
 export default function Header() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const closeMenu = useCallback(() => setIsOpen(false), []);
+
+  // Close on ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMenu();
+    };
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen, closeMenu]);
+
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-black/70 backdrop-blur">
-      <nav className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3">
-        <Link to="/" className="flex items-center gap-2">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2" aria-label="ETHINX Home">
           <img src={BRAND.LOGO} alt="ETHINX logo" className="h-8 w-auto" />
         </Link>
-        <div className="ml-auto flex items-center gap-5 text-sm">
-          <NavLink to="/how-it-works" className="hover:text-white/90">How it works</NavLink>
-          <NavLink to="/examples" className="hover:text-white/90">Examples</NavLink>
-          <NavLink to="/pricing" className="hover:text-white/90">Pricing</NavLink>
-          <NavLink to="/faq" className="hover:text-white/90">FAQ</NavLink>
+
+        {/* Desktop Nav */}
+        <div className="hidden lg:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors hover:text-primary ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`
+              }
+            >
+              {link.label}
+            </NavLink>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <a href="/pricing" className="rounded-lg bg-[#FBBF24] px-4 py-2 font-medium text-black">Get started</a>
+
+        {/* Desktop CTA */}
+        <div className="hidden lg:flex items-center gap-3">
+          <Link
+            to="/pricing"
+            className="rounded-lg bg-primary px-5 py-2.5 font-medium text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-gold"
+          >
+            Upload Photos
+          </Link>
         </div>
+
+        {/* Mobile Hamburger */}
+        <button
+          onClick={() => setIsOpen(true)}
+          className="lg:hidden p-2 text-foreground hover:text-primary transition-colors"
+          aria-label="Open menu"
+          aria-expanded={isOpen}
+        >
+          <Menu className="h-6 w-6" />
+        </button>
       </nav>
+
+      {/* Mobile Drawer Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={closeMenu}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <div
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-background border-l border-border transform transition-transform duration-300 ease-out lg:hidden ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation"
+      >
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-7 w-auto" />
+          <button
+            onClick={closeMenu}
+            className="p-2 text-foreground hover:text-primary transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <nav className="flex flex-col p-4 gap-1">
+          {navLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              onClick={closeMenu}
+              className={({ isActive }) =>
+                `block px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-secondary"
+                }`
+              }
+            >
+              {link.label}
+            </NavLink>
+          ))}
+
+          <div className="mt-6 pt-4 border-t border-border space-y-3">
+            <Link
+              to="/pricing"
+              onClick={closeMenu}
+              className="block w-full text-center rounded-lg bg-primary px-5 py-3 font-medium text-primary-foreground transition-all hover:bg-primary/90"
+            >
+              Upload Photos
+            </Link>
+            <Link
+              to="/contact"
+              onClick={closeMenu}
+              className="block w-full text-center rounded-lg border border-border px-5 py-3 font-medium text-foreground transition-all hover:bg-secondary"
+            >
+              Contact Us
+            </Link>
+          </div>
+        </nav>
+      </div>
     </header>
   );
 }
