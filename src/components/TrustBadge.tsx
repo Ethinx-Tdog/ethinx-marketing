@@ -1,4 +1,5 @@
 import { Shield, Lock, Download } from "lucide-react";
+import { BRAND } from "@/lib/brand";
 
 interface TrustBadgeProps {
   variant?: "tdog" | "secure" | "download";
@@ -11,8 +12,8 @@ export function TrustBadge({ variant = "tdog", className = "" }: TrustBadgeProps
       <div className={`flex items-start gap-4 ${className}`}>
         <div className="shrink-0">
           <img
-            src="/brand/t-dog-certified.png"
-            alt="T-DOG Certified"
+            src={BRAND.TDOG}
+            alt="T-DOG Certified badge"
             className="h-12 w-12 object-contain"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
