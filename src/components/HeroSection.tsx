@@ -1,7 +1,8 @@
-import { ArrowRight, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrustStrip } from "@/components/TrustBadge";
 import { Link } from "react-router-dom";
+import { UploadButton } from "@/components/UploadButton";
 
 export function HeroSection() {
   return (
@@ -29,12 +30,7 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Button variant="gold" size="xl" asChild>
-              <a href="https://app.ethinx.solutions/start" className="group">
-                Upload Photos
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </a>
-            </Button>
+            <UploadButton variant="gold" size="xl" className="group" />
             <Button variant="outline" size="xl" asChild>
               <Link to="/examples" className="group">
                 <Play className="h-5 w-5" />
