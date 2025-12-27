@@ -15,7 +15,7 @@
     --popover: 0 0% 5%;
     --popover-foreground: 38 25% 93%;
 
-    --primary: 28 40% 64%;
+    --primary: 45 93% 56%;
     --primary-foreground: 0 0% 3%;
 
     --secondary: 0 0% 8%;
@@ -24,7 +24,7 @@
     --muted: 0 0% 12%;
     --muted-foreground: 30 10% 72%;
 
-    --accent: 28 40% 64%;
+    --accent: 45 93% 56%;
     --accent-foreground: 0 0% 3%;
 
     --destructive: 0 84% 60%;
@@ -32,13 +32,13 @@
 
     --border: 0 0% 14%;
     --input: 0 0% 14%;
-    --ring: 28 40% 64%;
+    --ring: 45 93% 56%;
 
     --radius: 0.75rem;
 
-    --gold: 28 40% 64%;
-    --gold-light: 32 45% 75%;
-    --gold-dark: 24 35% 50%;
+    --gold: 45 93% 56%;
+    --gold-light: 48 96% 65%;
+    --gold-dark: 32 95% 44%;
     --charcoal: 0 0% 3%;
     --charcoal-light: 0 0% 7%;
     --ivory: 38 25% 93%;
@@ -66,11 +66,11 @@
 @layer components {
   .text-gradient-gold {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #E8C4A0 0%, #D4A574 50%, #B8956A 100%);
+    background-image: linear-gradient(135deg, #FCD34D 0%, #FBBF24 50%, #D97706 100%);
   }
 
   .bg-gradient-gold {
-    background-image: linear-gradient(135deg, #D4A574 0%, #E8C4A0 50%, #D4A574 100%);
+    background-image: linear-gradient(135deg, #FBBF24 0%, #FCD34D 50%, #FBBF24 100%);
   }
 
   .bg-gradient-dark {
@@ -78,29 +78,29 @@
   }
 
   .bg-gradient-radial {
-    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 165, 116, 0.15), transparent);
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(251, 191, 36, 0.15), transparent);
   }
 
   .bg-gradient-radial-bottom {
-    background: radial-gradient(ellipse 80% 50% at 50% 120%, rgba(212, 165, 116, 0.1), transparent);
+    background: radial-gradient(ellipse 80% 50% at 50% 120%, rgba(251, 191, 36, 0.1), transparent);
   }
 
   .shadow-gold {
-    box-shadow: 0 4px 40px -10px rgba(212, 165, 116, 0.35);
+    box-shadow: 0 4px 40px -10px rgba(251, 191, 36, 0.35);
   }
 
   .shadow-gold-lg {
-    box-shadow: 0 8px 60px -15px rgba(212, 165, 116, 0.4);
+    box-shadow: 0 8px 60px -15px rgba(251, 191, 36, 0.4);
   }
 
   .glow-gold {
-    box-shadow: 0 0 40px rgba(212, 165, 116, 0.15);
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.15);
   }
 
   .border-gradient {
     border: 1px solid transparent;
     background: linear-gradient(var(--charcoal), var(--charcoal)) padding-box,
-                linear-gradient(135deg, rgba(212, 165, 116, 0.3), transparent 50%, rgba(212, 165, 116, 0.1)) border-box;
+                linear-gradient(135deg, rgba(251, 191, 36, 0.3), transparent 50%, rgba(251, 191, 36, 0.1)) border-box;
   }
 
   .glass {
@@ -114,7 +114,7 @@
 
   .hover-lift:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 40px -10px rgba(212, 165, 116, 0.25);
+    box-shadow: 0 12px 40px -10px rgba(251, 191, 36, 0.25);
   }
 
   .link-underline {
