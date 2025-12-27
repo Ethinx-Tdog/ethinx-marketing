@@ -1,28 +1,31 @@
-import { Routes, Route, Link, Navigate } from "react-router-dom";
-import Home from "./pages/Index";
-import Examples from "./pages/Examples";
-import Pricing from "./pages/Pricing";
+import { Routes, Route, Navigate } from "react-router-dom";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import Index from "@/pages/Index";
+import Examples from "@/pages/Examples";
+import Pricing from "@/pages/Pricing";
+import FAQ from "@/pages/FAQ";
+import HowItWorks from "@/pages/HowItWorks";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-black text-zinc-100">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-black/70 backdrop-blur">
-        <nav className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3">
-          <Link to="/" className="font-semibold tracking-wide">ETHINX</Link>
-          <div className="ml-auto flex gap-4 text-sm">
-            <Link to="/examples">Examples</Link>
-            <Link to="/pricing">Pricing</Link>
-          </div>
-        </nav>
-      </header>
-      <main className="mx-auto max-w-7xl px-4 py-10">
+    <div className="min-h-screen bg-black text-zinc-100 flex flex-col">
+      <Header />
+      <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Index />} />
           <Route path="/examples" element={<Examples />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 }
