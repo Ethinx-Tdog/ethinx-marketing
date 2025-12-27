@@ -15,6 +15,7 @@ import {
   Home,
   HeartPulse,
   User,
+  ImageOff,
 } from "lucide-react";
 
 const styleIcons: Record<StyleBlock["id"], React.ReactNode> = {
@@ -69,7 +70,7 @@ export default function StyleTiles() {
   return (
     <section className="py-16">
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-        Explore by <span className="text-[#FBBF24]">Style</span>
+        Explore by <span className="text-gradient-gold">Style</span>
       </h2>
       <p className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto">
         Click a style to see real before & after transformations for men and
@@ -82,12 +83,13 @@ export default function StyleTiles() {
           <button
             key={style.id}
             onClick={() => openModal(style)}
-            className={`group relative flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-white/10 bg-gradient-to-br ${styleGradients[style.id]} hover:border-[#FBBF24]/50 hover:scale-[1.02] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FBBF24]`}
+            aria-label={`View ${style.label} examples`}
+            className={`group relative flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-border bg-gradient-to-br ${styleGradients[style.id]} hover:border-primary/50 hover:scale-[1.02] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
           >
-            <div className="text-[#FBBF24] group-hover:scale-110 transition-transform">
+            <div className="text-primary group-hover:scale-110 transition-transform">
               {styleIcons[style.id]}
             </div>
-            <span className="font-semibold text-white">{style.label}</span>
+            <span className="font-semibold text-foreground">{style.label}</span>
             <span className="text-xs text-muted-foreground">
               {style.male.length + style.female.length} example
               {style.male.length + style.female.length !== 1 ? "s" : ""}
@@ -98,12 +100,12 @@ export default function StyleTiles() {
 
       {/* Modal */}
       <Dialog open={!!selectedStyle} onOpenChange={closeModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-white/10">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-border">
           {selectedStyle && (
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3 text-2xl">
-                  <span className="text-[#FBBF24]">
+                  <span className="text-primary">
                     {styleIcons[selectedStyle.id]}
                   </span>
                   {selectedStyle.label} Examples
@@ -119,7 +121,7 @@ export default function StyleTiles() {
                   <TabsTrigger
                     value="male"
                     disabled={selectedStyle.male.length === 0}
-                    className="flex items-center gap-2 data-[state=active]:bg-[#FBBF24] data-[state=active]:text-black"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                   >
                     <User className="h-4 w-4" />
                     Male
@@ -130,7 +132,7 @@ export default function StyleTiles() {
                   <TabsTrigger
                     value="female"
                     disabled={selectedStyle.female.length === 0}
-                    className="flex items-center gap-2 data-[state=active]:bg-[#FBBF24] data-[state=active]:text-black"
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                   >
                     <User className="h-4 w-4" />
                     Female
@@ -160,8 +162,9 @@ function SliderGrid({ pairs }: { pairs: Pair[] }) {
   if (pairs.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <User className="h-12 w-12 mx-auto mb-4 opacity-30" />
+        <ImageOff className="h-12 w-12 mx-auto mb-4 opacity-30" />
         <p>No examples available for this category yet.</p>
+        <p className="text-sm mt-2">Check back soon!</p>
       </div>
     );
   }
