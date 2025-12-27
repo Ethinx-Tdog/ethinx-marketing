@@ -12,6 +12,7 @@ export default function Examples() {
       </section>
     );
   }
+
   return (
     <section className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10">
       <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-6">
