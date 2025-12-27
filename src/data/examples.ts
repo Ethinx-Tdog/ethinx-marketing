@@ -5,6 +5,7 @@ export const examplePairs = [
   { before: "/examples/health-male/before.jpg", after: "/examples/health-male/after.jpg" },
   { before: "/examples/creative-female/before.jpg", after: "/examples/creative-female/after.jpg" },
   { before: "/examples/creative-male/before.jpg", after: "/examples/creative-male/after.jpg" },
+  { before: "/examples/tradie-male/before.jpg", after: "/examples/tradie-male/after.jpg" },
   { before: "/examples/realestate-female/before.jpg", after: "/examples/realestate-female/after.jpg" },
   { before: "/examples/nicole/before.jpg", after: "/examples/nicole/after.jpg" },
   { before: "/examples/jimmy/before.jpg",  after: "/examples/jimmy/after.jpg" },
