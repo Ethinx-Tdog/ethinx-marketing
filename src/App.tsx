@@ -1,56 +1,28 @@
-import { HelmetProvider } from "react-helmet-async";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
-import Index from "./pages/Index";
-import Pricing from "./pages/Pricing";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
+import Home from "./pages/Index";
 import Examples from "./pages/Examples";
-import HowItWorks from "./pages/HowItWorks";
-import FAQ from "./pages/FAQ";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import RealEstateHeadshots from "./pages/industries/RealEstateHeadshots";
-import TradieBusinessPhotos from "./pages/industries/TradieBusinessPhotos";
-import DatingProfilePictures from "./pages/industries/DatingProfilePictures";
-import LinkedInProfessionalPhotos from "./pages/industries/LinkedInProfessionalPhotos";
-import JobSeekerHeadshots from "./pages/industries/JobSeekerHeadshots";
-import SocialInfluencerPhotos from "./pages/industries/SocialInfluencerPhotos";
-import NotFound from "./pages/NotFound";
+import Pricing from "./pages/Pricing";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/examples" element={<Examples />} />
-              <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/real-estate-headshots" element={<RealEstateHeadshots />} />
-              <Route path="/tradie-business-photos" element={<TradieBusinessPhotos />} />
-              <Route path="/dating-profile-pictures" element={<DatingProfilePictures />} />
-              <Route path="/linkedin-professional-photos" element={<LinkedInProfessionalPhotos />} />
-              <Route path="/job-seeker-headshots" element={<JobSeekerHeadshots />} />
-              <Route path="/social-influencer-photos" element={<SocialInfluencerPhotos />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
-);
-
-export default App;
+export default function App() {
+  return (
+    <div className="min-h-screen bg-black text-zinc-100">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-black/70 backdrop-blur">
+        <nav className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3">
+          <Link to="/" className="font-semibold tracking-wide">ETHINX</Link>
+          <div className="ml-auto flex gap-4 text-sm">
+            <Link to="/examples">Examples</Link>
+            <Link to="/pricing">Pricing</Link>
+          </div>
+        </nav>
+      </header>
+      <main className="mx-auto max-w-7xl px-4 py-10">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/examples" element={<Examples />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
