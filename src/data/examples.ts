@@ -1,4 +1,9 @@
 export const examplePairs = [
-  // Only local files you add under /public/examples/<person>/
-  { before: "/examples/james/before.jpg", after: "/examples/james/after.jpg" }
+  { before: "/examples/jimmy/before.jpg",  after: "/examples/jimmy/after.jpg"  },
+  { before: "/examples/luke/before.jpg",   after: "/examples/luke/after.jpg"   },
+  { before: "/examples/cody/before.jpg",   after: "/examples/cody/after.jpg"   },
+  { before: "/examples/boys/before.jpg",   after: "/examples/boys/after.jpg"   },
+  { before: "/examples/brian/before.jpg",  after: "/examples/brian/after.jpg"  },
+  // When I upload these two files, append this line and rebuild:
+  // { before: "/examples/nicole/before.jpg", after: "/examples/nicole/after.jpg" },
 ];
