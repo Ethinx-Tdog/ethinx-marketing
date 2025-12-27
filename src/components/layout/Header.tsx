@@ -87,9 +87,10 @@ export default function Header() {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-background border-l border-border transform transition-transform duration-300 ease-out lg:hidden ${
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-card border-l border-border shadow-2xl transform transition-transform duration-300 ease-out lg:hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
+        style={{ backgroundColor: 'hsl(var(--card))' }}
         role="dialog"
         aria-modal="true"
         aria-label="Mobile navigation"
