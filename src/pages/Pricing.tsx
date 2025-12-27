@@ -3,14 +3,11 @@ import { Shield, CreditCard, BadgeCheck, Check } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { usePricing } from "@/contexts/PricingContext";
+import type { PackageId } from "@/lib/pricing-config";
 
 interface Plan {
+  id: PackageId;
   name: string;
   price: number;
   photos: number;
@@ -20,6 +17,7 @@ interface Plan {
 
 const plans: Plan[] = [
   {
+    id: "starter",
     name: "Starter",
     price: 49,
     photos: 15,
@@ -32,6 +30,7 @@ const plans: Plan[] = [
     ],
   },
   {
+    id: "professional",
     name: "Professional",
     price: 89,
     photos: 30,
@@ -47,6 +46,7 @@ const plans: Plan[] = [
     ],
   },
   {
+    id: "ultimate",
     name: "Ultimate",
     price: 149,
     photos: 50,
@@ -64,6 +64,8 @@ const plans: Plan[] = [
 ];
 
 export default function Pricing() {
+  const { selectPackage } = usePricing();
+
   return (
     <>
       <SEO
@@ -122,25 +124,16 @@ export default function Pricing() {
                   ))}
                 </ul>
 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        disabled
-                        className={`w-full ${
-                          plan.popular
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-secondary text-secondary-foreground"
-                        } opacity-70 cursor-not-allowed`}
-                      >
-                        Choose {plan.name}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Coming soon</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Button
+                  onClick={() => selectPackage(plan.id)}
+                  className={`w-full ${
+                    plan.popular
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  Choose {plan.name}
+                </Button>
               </div>
             ))}
           </div>
