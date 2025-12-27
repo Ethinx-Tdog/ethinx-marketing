@@ -1,14 +1,11 @@
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import StyleTiles from "@/components/StyleTiles";
-import { examplePairs } from "@/data/examples";
+import { featuredExamples } from "@/data/examples";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
 export default function Examples() {
-  // Show first 6 examples as featured
-  const featuredPairs = examplePairs.slice(0, 6);
-
   return (
     <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10">
       {/* Hero Section */}
@@ -28,21 +25,26 @@ export default function Examples() {
         </Link>
       </section>
 
-      {/* Featured Examples Grid */}
-      {featuredPairs.length > 0 && (
+      {/* Featured Examples Grid - Personal examples (Nicole, Luke, Jimmy, etc.) */}
+      {featuredExamples.length > 0 && (
         <section className="mb-16">
           <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-6">
             Featured Examples
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredPairs.map((p, i) => (
-              <BeforeAfterSlider key={i} before={p.before} after={p.after} />
+            {featuredExamples.map((p, i) => (
+              <BeforeAfterSlider
+                key={i}
+                before={p.before}
+                after={p.after}
+                alt={p.alt}
+              />
             ))}
           </div>
         </section>
       )}
 
-      {/* Style Tiles Section */}
+      {/* Style Tiles Section - Industry examples behind buttons */}
       <StyleTiles />
 
       {/* CTA Section */}
