@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { UpsellModal } from "@/components/UpsellModal";
 import Index from "@/pages/Index";
 import Examples from "@/pages/Examples";
 import Pricing from "@/pages/Pricing";
@@ -49,6 +50,7 @@ export default function App() {
         </Routes>
       </main>
       <Footer />
+      <UpsellModal />
     </div>
   );
 }
