@@ -34,10 +34,15 @@ export default function BeforeAfterSlider({ before, after }:{
       onTouchStart={()=> setDragging(true)}
       onTouchEnd={()=> setDragging(false)}
     >
+      {/* AFTER base */}
       <img src={after} className="absolute inset-0 h-full w-full object-cover" alt="after" />
+
+      {/* BEFORE clipped to slider position */}
       <div style={{ width: `${xPct}%` }} className="absolute inset-0 overflow-hidden">
         <img src={before} className="absolute inset-0 h-full w-full object-cover" alt="before" />
       </div>
+
+      {/* Handle + divider */}
       <div
         role="slider"
         aria-valuenow={Math.round(xPct)}
@@ -54,6 +59,8 @@ export default function BeforeAfterSlider({ before, after }:{
       >
         <div className="absolute top-1/2 left-1/2 h-10 w-[2px] -translate-x-1/2 -translate-y-1/2 bg-white/70" />
       </div>
+
+      {/* Labels */}
       <div className="pointer-events-none absolute left-2 top-2 rounded bg-black/60 px-2 py-1 text-xs">Before</div>
       <div className="pointer-events-none absolute right-2 bottom-2 rounded bg-black/60 px-2 py-1 text-xs">After</div>
     </div>
