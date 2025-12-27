@@ -1,58 +1,27 @@
 import { Link } from "react-router-dom";
 import { BRAND } from "@/lib/brand";
 
-const footerLinks = [
-  { href: "/privacy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
-  { href: "/faq", label: "FAQ" },
-];
-
-export function Footer() {
+export default function Footer() {
   return (
-    <footer className="border-t border-border/50 bg-charcoal">
-      <div className="container py-12 md:py-16">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-          <Link to="/" className="flex items-center">
-            <img
-              src={BRAND.LOGO}
-              alt="ETHINX logo"
-              className="h-5 w-auto opacity-60 hover:opacity-100 transition-opacity"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.parentElement!.innerHTML = '<span class="text-lg font-display font-semibold text-gradient-gold opacity-60 hover:opacity-100">ETHINX</span>';
-              }}
-            />
-          </Link>
-
-          <nav className="flex items-center gap-6 md:gap-8">
-            {footerLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          <a
-            href="mailto:support@ethinx.solutions"
-            className="text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
-            support@ethinx.solutions
-          </a>
+    <footer className="border-t border-white/10">
+      <div className="mx-auto max-w-7xl px-4 py-10 grid gap-6 md:grid-cols-3">
+        <div className="space-y-3">
+          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-8 w-auto" />
+          <p className="text-white/70 text-sm">AI-Generated professional headshots in minutes.</p>
         </div>
-
-        <div className="mt-10 pt-8 border-t border-border/30 text-center">
-          <p className="text-xs text-muted-foreground/70">
-            © {new Date().getFullYear()} ETHINX. All rights reserved.
-          </p>
+        <div className="text-sm grid grid-cols-2 gap-3">
+          <Link to="/how-it-works" className="hover:text-white/90">How it works</Link>
+          <Link to="/examples" className="hover:text-white/90">Examples</Link>
+          <Link to="/pricing" className="hover:text-white/90">Pricing</Link>
+          <Link to="/faq" className="hover:text-white/90">FAQ</Link>
+          <Link to="/privacy" className="hover:text-white/90">Privacy</Link>
+          <Link to="/terms" className="hover:text-white/90">Terms</Link>
+        </div>
+        <div className="text-sm text-white/70">
+          <div>Contact: <a href="mailto:support@ethinx.solutions" className="underline">support@ethinx.solutions</a></div>
+          <div className="mt-2">© {new Date().getFullYear()} ETHINX. All rights reserved.</div>
         </div>
       </div>
     </footer>
   );
 }
-
-export default Footer;
