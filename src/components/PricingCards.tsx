@@ -1,66 +1,18 @@
 import { Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-interface PricingPlan {
-  name: string;
-  price: number;
-  features: string[];
-  popular?: boolean;
-  planId: string;
-}
-
-const plans: PricingPlan[] = [
-  {
-    name: "Starter",
-    price: 29,
-    planId: "starter",
-    features: [
-      "10 professional headshots",
-      "3 background options",
-      "2 outfit styles",
-      "24-hour delivery",
-      "Commercial usage rights",
-    ],
-  },
-  {
-    name: "Professional",
-    price: 59,
-    planId: "professional",
-    popular: true,
-    features: [
-      "25 professional headshots",
-      "8 background options",
-      "5 outfit styles",
-      "12-hour priority delivery",
-      "LinkedIn banner included",
-      "Profile optimization tips",
-      "Commercial usage rights",
-    ],
-  },
-  {
-    name: "Ultimate",
-    price: 79,
-    planId: "ultimate",
-    features: [
-      "40 professional headshots",
-      "Unlimited backgrounds",
-      "8 outfit styles",
-      "15 lifestyle location shots",
-      "Complete social media pack",
-      "Dating profile kit",
-      "Team discounts available",
-      "Commercial usage rights",
-    ],
-  },
-];
+import { PACKAGES } from "@/lib/pricing-config";
+import { usePricing } from "@/contexts/PricingContext";
+import { BRAND } from "@/lib/brand";
 
 export function PricingCards() {
+  const { selectPackage } = usePricing();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-      {plans.map((plan) => (
+      {PACKAGES.map((plan) => (
         <div
-          key={plan.name}
+          key={plan.id}
           className={cn(
             "relative flex flex-col p-6 lg:p-8 rounded-2xl border transition-all duration-300 hover-lift",
             plan.popular
@@ -76,15 +28,28 @@ export function PricingCards() {
           )}
 
           <div className="mb-6">
-            <h3 className="text-lg font-display font-semibold text-foreground mb-3">
-              {plan.name}
-            </h3>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-lg font-display font-semibold text-foreground">
+                {plan.name}
+              </h3>
+              {plan.badge && (
+                <img 
+                  src={BRAND.TDOG} 
+                  alt={plan.badge} 
+                  className="h-6 w-6 object-contain" 
+                  title={plan.badge}
+                />
+              )}
+            </div>
             <div className="flex items-baseline gap-1">
               <span className="text-4xl lg:text-5xl font-bold text-gradient-gold">
                 ${plan.price}
               </span>
               <span className="text-muted-foreground text-sm">AUD</span>
             </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {plan.photos} photos • {plan.outfits} outfits
+            </p>
           </div>
 
           <ul className="flex-1 space-y-3 mb-8">
@@ -100,11 +65,9 @@ export function PricingCards() {
             variant={plan.popular ? "gold" : "outline"}
             size="lg"
             className="w-full"
-            asChild
+            onClick={() => selectPackage(plan.id)}
           >
-            <a href={`https://app.ethinx.solutions/start?plan=${plan.planId}`}>
-              Choose {plan.name}
-            </a>
+            Choose {plan.name}
           </Button>
         </div>
       ))}
