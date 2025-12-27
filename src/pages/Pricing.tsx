@@ -2,6 +2,7 @@ import { PricingCards } from "@/components/PricingCards";
 import { IndustrySelector } from "@/components/IndustrySelector";
 import { UpsellModal } from "@/components/UpsellModal";
 import { PricingProvider } from "@/contexts/PricingContext";
+import StyleTiles from "@/components/StyleTiles";
 
 export default function Pricing() {
   return (
@@ -23,6 +24,10 @@ export default function Pricing() {
         </div>
 
         <PricingCards />
+        
+        {/* Industry Examples - Style Tiles with Modal */}
+        <StyleTiles />
+        
         <UpsellModal />
       </section>
     </PricingProvider>
