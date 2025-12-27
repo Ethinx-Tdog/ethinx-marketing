@@ -1,148 +1,61 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 
-interface BeforeAfterSliderProps {
-  beforeImage: string;
-  afterImage: string;
-  beforeAlt?: string;
-  afterAlt?: string;
-  className?: string;
-}
-
-export function BeforeAfterSlider({
-  beforeImage,
-  afterImage,
-  beforeAlt = "Before",
-  afterAlt = "After",
-  className = "",
-}: BeforeAfterSliderProps) {
-  const [sliderPosition, setSliderPosition] = useState(50);
-  const [isDragging, setIsDragging] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+export default function BeforeAfterSlider({ before, after }:{
+  before: string; after: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [xPct, setXPct] = useState(50);
+  const [dragging, setDragging] = useState(false);
+
+  const setFromClientX = useCallback((clientX:number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const clamped = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    setXPct((clamped / rect.width) * 100);
+  }, []);
 
   useEffect(() => {
-    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const mobileQuery = window.matchMedia("(max-width: 640px)");
-    
-    setPrefersReducedMotion(motionQuery.matches);
-    setIsMobile(mobileQuery.matches);
-
-    const handleMotionChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
-    const handleMobileChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    
-    motionQuery.addEventListener("change", handleMotionChange);
-    mobileQuery.addEventListener("change", handleMobileChange);
-    
+    const onMove = (e:MouseEvent) => dragging && setFromClientX(e.clientX);
+    const onUp = () => setDragging(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
     return () => {
-      motionQuery.removeEventListener("change", handleMotionChange);
-      mobileQuery.removeEventListener("change", handleMobileChange);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     };
-  }, []);
-
-  const handleMove = useCallback((clientX: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const percentage = (x / rect.width) * 100;
-    setSliderPosition(percentage);
-  }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isDragging) handleMove(e.clientX);
-  }, [isDragging, handleMove]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (isDragging) handleMove(e.touches[0].clientX);
-  }, [isDragging, handleMove]);
-
-  if (prefersReducedMotion || isMobile) {
-    return (
-      <div className={cn("grid grid-cols-2 gap-1 rounded-xl overflow-hidden", className)}>
-        <div className="relative aspect-[4/5]">
-          <img 
-            src={beforeImage} 
-            alt={beforeAlt} 
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <span className="absolute bottom-2 left-2 bg-charcoal/90 text-foreground text-xs px-2 py-1 rounded font-medium">
-            Before
-          </span>
-        </div>
-        <div className="relative aspect-[4/5]">
-          <img 
-            src={afterImage} 
-            alt={afterAlt} 
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <span className="absolute bottom-2 right-2 bg-gold text-charcoal text-xs px-2 py-1 rounded font-medium">
-            After
-          </span>
-        </div>
-      </div>
-    );
-  }
+  }, [dragging, setFromClientX]);
 
   return (
     <div
       ref={containerRef}
-      className={cn(
-        "relative w-full aspect-[4/5] rounded-xl overflow-hidden cursor-ew-resize select-none border border-border/50",
-        className
-      )}
-      onMouseMove={handleMouseMove}
-      onMouseUp={() => setIsDragging(false)}
-      onMouseLeave={() => setIsDragging(false)}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={() => setIsDragging(false)}
+      className="relative aspect-[3/4] overflow-hidden rounded-xl border border-white/10 bg-black"
+      onTouchMove={(e)=> setFromClientX(e.touches[0].clientX)}
+      onTouchStart={()=> setDragging(true)}
+      onTouchEnd={()=> setDragging(false)}
     >
-      <img
-        src={afterImage}
-        alt={afterAlt}
-        className="absolute inset-0 w-full h-full object-cover"
-        draggable={false}
-        loading="lazy"
-      />
-
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ width: `${sliderPosition}%` }}
-      >
-        <img
-          src={beforeImage}
-          alt={beforeAlt}
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ width: `${containerRef.current ? (containerRef.current.offsetWidth / (sliderPosition / 100)) : 100}px`, maxWidth: "none" }}
-          draggable={false}
-          loading="lazy"
-        />
+      <img src={after} className="absolute inset-0 h-full w-full object-cover" alt="after" />
+      <div style={{ width: `${xPct}%` }} className="absolute inset-0 overflow-hidden">
+        <img src={before} className="absolute inset-0 h-full w-full object-cover" alt="before" />
       </div>
-
       <div
-        className="absolute top-0 bottom-0 w-0.5 bg-gold cursor-ew-resize z-10"
-        style={{ left: `${sliderPosition}%`, transform: "translateX(-50%)" }}
-        onMouseDown={() => setIsDragging(true)}
-        onTouchStart={() => setIsDragging(true)}
+        role="slider"
+        aria-valuenow={Math.round(xPct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        tabIndex={0}
+        onMouseDown={()=> setDragging(true)}
+        onKeyDown={(e)=> {
+          if (e.key === "ArrowLeft") setXPct(p => Math.max(0, p - 2));
+          if (e.key === "ArrowRight") setXPct(p => Math.min(100, p + 2));
+        }}
+        style={{ left: `calc(${xPct}% - 11px)` }}
+        className="absolute top-0 bottom-0 w-[22px] cursor-col-resize bg-white/5 backdrop-blur-sm"
       >
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-gold rounded-full flex items-center justify-center shadow-gold">
-          <div className="flex gap-0.5">
-            <div className="w-0.5 h-4 bg-charcoal rounded-full" />
-            <div className="w-0.5 h-4 bg-charcoal rounded-full" />
-          </div>
-        </div>
+        <div className="absolute top-1/2 left-1/2 h-10 w-[2px] -translate-x-1/2 -translate-y-1/2 bg-white/70" />
       </div>
-
-      <span className="absolute bottom-3 left-3 bg-charcoal/90 text-foreground text-xs font-medium px-2 py-1 rounded">
-        Before
-      </span>
-      <span className="absolute bottom-3 right-3 bg-gold text-charcoal text-xs font-medium px-2 py-1 rounded">
-        After
-      </span>
+      <div className="pointer-events-none absolute left-2 top-2 rounded bg-black/60 px-2 py-1 text-xs">Before</div>
+      <div className="pointer-events-none absolute right-2 bottom-2 rounded bg-black/60 px-2 py-1 text-xs">After</div>
     </div>
   );
 }
-
-export default BeforeAfterSlider;

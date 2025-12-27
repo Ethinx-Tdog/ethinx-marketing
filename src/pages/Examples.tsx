@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SEO } from "@/components/SEO";
 import { SectionHeading } from "@/components/SectionHeading";
-import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
+import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +40,7 @@ const Examples = () => {
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((ex) => (<BeforeAfterSlider key={ex.id} beforeImage={ex.before} afterImage={ex.after} />))}
+            {filtered.map((ex) => (<BeforeAfterSlider key={ex.id} before={ex.before} after={ex.after} />))}
           </div>
           <div className="text-center mt-16">
             <Button variant="gold" size="lg" asChild><a href="https://app.ethinx.solutions/start">Create Your Own</a></Button>
