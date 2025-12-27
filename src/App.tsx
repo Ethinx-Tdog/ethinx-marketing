@@ -12,6 +12,14 @@ import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import NotFound from "@/pages/NotFound";
 
+// Industry pages
+import RealEstateHeadshots from "@/pages/industries/RealEstateHeadshots";
+import TradieBusinessPhotos from "@/pages/industries/TradieBusinessPhotos";
+import DatingProfilePictures from "@/pages/industries/DatingProfilePictures";
+import LinkedInProfessionalPhotos from "@/pages/industries/LinkedInProfessionalPhotos";
+import JobSeekerHeadshots from "@/pages/industries/JobSeekerHeadshots";
+import SocialInfluencerPhotos from "@/pages/industries/SocialInfluencerPhotos";
+
 export default function App() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -27,6 +35,15 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          
+          {/* Industry pages */}
+          <Route path="/real-estate-headshots" element={<RealEstateHeadshots />} />
+          <Route path="/tradie-business-photos" element={<TradieBusinessPhotos />} />
+          <Route path="/dating-profile-pictures" element={<DatingProfilePictures />} />
+          <Route path="/linkedin-professional-photos" element={<LinkedInProfessionalPhotos />} />
+          <Route path="/job-seeker-headshots" element={<JobSeekerHeadshots />} />
+          <Route path="/social-influencer-photos" element={<SocialInfluencerPhotos />} />
+          
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

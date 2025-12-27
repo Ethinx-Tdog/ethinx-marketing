@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
-import { Sparkles, Lock, BadgeCheck, ArrowRight } from "lucide-react";
+import { Sparkles, Lock, BadgeCheck, ArrowRight, Star } from "lucide-react";
 import TrustStrip from "@/components/TrustStrip";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import HowItWorksSteps from "@/components/HowItWorksSteps";
+import StyleTiles from "@/components/StyleTiles";
 import { testimonials } from "@/data/testimonials";
 import { featuredExamples } from "@/data/examples";
-import { Star } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,6 +105,13 @@ export default function Index() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Explore by Style */}
+      <section className="py-16 md:py-24">
+        <div className="mx-auto max-w-7xl px-4">
+          <StyleTiles />
         </div>
       </section>
 
