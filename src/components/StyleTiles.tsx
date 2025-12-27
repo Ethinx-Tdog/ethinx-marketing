@@ -1,0 +1,189 @@
+import React, { useState, useEffect } from "react";
+import { styles, StyleBlock, Pair } from "@/data/examples";
+import BeforeAfterSlider from "@/components/BeforeAfterSlider";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  HardHat,
+  Palette,
+  Briefcase,
+  Home,
+  HeartPulse,
+  User,
+} from "lucide-react";
+
+const styleIcons: Record<StyleBlock["id"], React.ReactNode> = {
+  tradie: <HardHat className="h-8 w-8" />,
+  creative: <Palette className="h-8 w-8" />,
+  corporate: <Briefcase className="h-8 w-8" />,
+  realestate: <Home className="h-8 w-8" />,
+  health: <HeartPulse className="h-8 w-8" />,
+};
+
+const styleGradients: Record<StyleBlock["id"], string> = {
+  tradie: "from-orange-500/20 to-amber-600/20",
+  creative: "from-purple-500/20 to-pink-500/20",
+  corporate: "from-blue-500/20 to-slate-600/20",
+  realestate: "from-emerald-500/20 to-teal-600/20",
+  health: "from-cyan-500/20 to-blue-500/20",
+};
+
+export default function StyleTiles() {
+  const [selectedStyle, setSelectedStyle] = useState<StyleBlock | null>(null);
+  const [defaultTab, setDefaultTab] = useState<"male" | "female">("male");
+
+  const openModal = (style: StyleBlock) => {
+    // Default to the tab that has content
+    if (style.male.length > 0) {
+      setDefaultTab("male");
+    } else if (style.female.length > 0) {
+      setDefaultTab("female");
+    }
+    setSelectedStyle(style);
+  };
+
+  const closeModal = () => setSelectedStyle(null);
+
+  // Preload first after image when modal opens
+  useEffect(() => {
+    if (!selectedStyle) return;
+    const pairs =
+      defaultTab === "male" ? selectedStyle.male : selectedStyle.female;
+    if (pairs.length > 0) {
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = pairs[0].after;
+      document.head.appendChild(link);
+      return () => {
+        document.head.removeChild(link);
+      };
+    }
+  }, [selectedStyle, defaultTab]);
+
+  return (
+    <section className="py-16">
+      <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+        Explore by <span className="text-[#FBBF24]">Style</span>
+      </h2>
+      <p className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto">
+        Click a style to see real before & after transformations for men and
+        women.
+      </p>
+
+      {/* Style Tiles Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        {styles.map((style) => (
+          <button
+            key={style.id}
+            onClick={() => openModal(style)}
+            className={`group relative flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-white/10 bg-gradient-to-br ${styleGradients[style.id]} hover:border-[#FBBF24]/50 hover:scale-[1.02] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FBBF24]`}
+          >
+            <div className="text-[#FBBF24] group-hover:scale-110 transition-transform">
+              {styleIcons[style.id]}
+            </div>
+            <span className="font-semibold text-white">{style.label}</span>
+            <span className="text-xs text-muted-foreground">
+              {style.male.length + style.female.length} example
+              {style.male.length + style.female.length !== 1 ? "s" : ""}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Modal */}
+      <Dialog open={!!selectedStyle} onOpenChange={closeModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-white/10">
+          {selectedStyle && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3 text-2xl">
+                  <span className="text-[#FBBF24]">
+                    {styleIcons[selectedStyle.id]}
+                  </span>
+                  {selectedStyle.label} Examples
+                </DialogTitle>
+              </DialogHeader>
+
+              <Tabs
+                defaultValue={defaultTab}
+                className="mt-4"
+                onValueChange={(v) => setDefaultTab(v as "male" | "female")}
+              >
+                <TabsList className="grid w-full max-w-xs mx-auto grid-cols-2 mb-6">
+                  <TabsTrigger
+                    value="male"
+                    disabled={selectedStyle.male.length === 0}
+                    className="flex items-center gap-2 data-[state=active]:bg-[#FBBF24] data-[state=active]:text-black"
+                  >
+                    <User className="h-4 w-4" />
+                    Male
+                    {selectedStyle.male.length === 0 && (
+                      <span className="text-xs opacity-50">(none)</span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="female"
+                    disabled={selectedStyle.female.length === 0}
+                    className="flex items-center gap-2 data-[state=active]:bg-[#FBBF24] data-[state=active]:text-black"
+                  >
+                    <User className="h-4 w-4" />
+                    Female
+                    {selectedStyle.female.length === 0 && (
+                      <span className="text-xs opacity-50">(none)</span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="male">
+                  <SliderGrid pairs={selectedStyle.male} />
+                </TabsContent>
+
+                <TabsContent value="female">
+                  <SliderGrid pairs={selectedStyle.female} />
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
+
+function SliderGrid({ pairs }: { pairs: Pair[] }) {
+  if (pairs.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <User className="h-12 w-12 mx-auto mb-4 opacity-30" />
+        <p>No examples available for this category yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`grid gap-6 ${
+        pairs.length === 1
+          ? "grid-cols-1 max-w-md mx-auto"
+          : pairs.length === 2
+            ? "grid-cols-1 md:grid-cols-2"
+            : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+      }`}
+    >
+      {pairs.map((pair, index) => (
+        <BeforeAfterSlider
+          key={index}
+          before={pair.before}
+          after={pair.after}
+          alt={pair.alt}
+        />
+      ))}
+    </div>
+  );
+}
