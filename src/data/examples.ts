@@ -6,6 +6,17 @@ export type StyleBlock = {
   female: Pair[];
 };
 
+// Personal/featured examples (Nicole, Luke, Jimmy, etc.)
+export const featuredExamples: Pair[] = [
+  { before: "/examples/nicole/before.jpg", after: "/examples/nicole/after.jpg", alt: "Nicole before and after" },
+  { before: "/examples/jimmy/before.jpg", after: "/examples/jimmy/after.jpg", alt: "Jimmy before and after" },
+  { before: "/examples/luke/before (1).jpg", after: "/examples/luke/after.jpg", alt: "Luke before and after" },
+  { before: "/examples/cody/before.jpg", after: "/examples/cody/after.jpg", alt: "Cody before and after" },
+  { before: "/examples/boys/before.jpg", after: "/examples/boys/after.jpg", alt: "Boys before and after" },
+  { before: "/examples/brian/before.jpg", after: "/examples/brian/after (1).jpg", alt: "Brian before and after" },
+];
+
+// Industry-specific styles (behind tiles/buttons)
 export const styles: StyleBlock[] = [
   {
     id: "tradie",
@@ -88,7 +99,7 @@ export const styles: StyleBlock[] = [
 ];
 
 // Legacy export for backward compatibility
-export const examplePairs = styles.flatMap((style) => [
-  ...style.male.map((p) => ({ before: p.before, after: p.after })),
-  ...style.female.map((p) => ({ before: p.before, after: p.after })),
-]);
+export const examplePairs = featuredExamples.map((p) => ({
+  before: p.before,
+  after: p.after,
+}));
