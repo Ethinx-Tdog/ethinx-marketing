@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { SEO } from "@/components/SEO";
-import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
+import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import { Button } from "@/components/ui/button";
 import { TrustBadge } from "@/components/TrustBadge";
 
@@ -71,9 +71,8 @@ export function IndustryPage({
 
             <div className="lg:order-first">
               <BeforeAfterSlider
-                beforeImage={beforeImage}
-                afterImage={afterImage}
-                className="max-w-md mx-auto lg:max-w-none"
+                before={beforeImage}
+                after={afterImage}
               />
             </div>
           </div>

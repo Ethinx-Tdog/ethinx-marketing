@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Building2, Wrench, Heart, Briefcase, UserSearch, Camera, X } from "lucide-react";
-import { BeforeAfterSlider } from "./BeforeAfterSlider";
+import BeforeAfterSlider from "./BeforeAfterSlider";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 
@@ -185,10 +185,8 @@ export function IndustryTiles() {
               {activeIndustry.sliders.map((slider, idx) => (
                 <BeforeAfterSlider
                   key={idx}
-                  beforeImage={slider.before}
-                  afterImage={slider.after}
-                  beforeAlt={`${activeIndustry.name} before ${idx + 1}`}
-                  afterAlt={`${activeIndustry.name} after ${idx + 1}`}
+                  before={slider.before}
+                  after={slider.after}
                 />
               ))}
             </div>
