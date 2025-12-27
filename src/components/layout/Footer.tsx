@@ -35,26 +35,9 @@ export default function Footer() {
                   Pricing
                 </Link>
               </li>
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h3 className="font-semibold text-sm mb-4">Company</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">
-                  About
-                </Link>
-              </li>
               <li>
                 <Link to="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
                   FAQ
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Contact
                 </Link>
               </li>
             </ul>
@@ -76,19 +59,40 @@ export default function Footer() {
               </li>
             </ul>
           </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="font-semibold text-sm mb-4">Contact</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a 
+                  href="mailto:support@ethinx.solutions" 
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  support@ethinx.solutions
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} ETHINX. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <a 
-              href="mailto:support@ethinx.solutions" 
-              className="hover:text-foreground transition-colors"
-            >
-              support@ethinx.solutions
-            </a>
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <Link to="/pricing" className="hover:text-foreground transition-colors">
+              Pricing
+            </Link>
+            <Link to="/examples" className="hover:text-foreground transition-colors">
+              Examples
+            </Link>
+            <Link to="/how-it-works" className="hover:text-foreground transition-colors">
+              How it works
+            </Link>
+            <Link to="/faq" className="hover:text-foreground transition-colors">
+              FAQ
+            </Link>
           </div>
         </div>
       </div>

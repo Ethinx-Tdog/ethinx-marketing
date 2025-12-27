@@ -1,14 +1,22 @@
 import { Link } from "react-router-dom";
-import { Shield, Clock, Award, Sparkles, Lock, BadgeCheck } from "lucide-react";
+import { Sparkles, Lock, BadgeCheck, ArrowRight } from "lucide-react";
 import TrustStrip from "@/components/TrustStrip";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
+import HowItWorksSteps from "@/components/HowItWorksSteps";
 import { testimonials } from "@/data/testimonials";
 import { featuredExamples } from "@/data/examples";
 import { Star } from "lucide-react";
 import { BRAND } from "@/lib/brand";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function Index() {
-  // Pick 3 sample transformations
+  // Pick 3 sample transformations for homepage
   const sampleTransformations = featuredExamples.slice(0, 3);
 
   return (
@@ -32,17 +40,31 @@ export default function Index() {
           </p>
           
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            <Link
-              to="/pricing"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-8 py-3.5 font-semibold text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-gold-lg"
-            >
-              See Pricing
-            </Link>
-            <Link
-              to="/examples"
-              className="inline-flex items-center justify-center rounded-lg border border-border px-8 py-3.5 font-semibold text-foreground transition-all hover:bg-secondary"
-            >
-              See Examples
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="lg"
+                    disabled
+                    className="bg-primary text-primary-foreground font-semibold opacity-70 cursor-not-allowed"
+                  >
+                    Upload Photos
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Coming soon</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Link to="/examples">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-border font-semibold"
+              >
+                See Examples
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </Link>
           </div>
           
@@ -55,7 +77,7 @@ export default function Index() {
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              Sample Transformations
+              Sample <span className="text-gradient-gold">Transformations</span>
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
               See real before & after results. Drag the slider to compare.
@@ -80,7 +102,7 @@ export default function Index() {
               className="inline-flex items-center gap-2 text-primary font-medium hover:underline"
             >
               View all examples
-              <span aria-hidden="true">→</span>
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -91,15 +113,15 @@ export default function Index() {
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              What Our Clients Say
+              What Our <span className="text-gradient-gold">Clients</span> Say
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
               Join thousands of professionals who trust ETHINX
             </p>
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {testimonials.map((t, idx) => (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {testimonials.slice(0, 6).map((t, idx) => (
               <div
                 key={idx}
                 className="flex flex-col p-6 rounded-2xl bg-card border border-border hover-lift"
@@ -122,12 +144,15 @@ export default function Index() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <HowItWorksSteps />
+
       {/* Why ETHINX */}
       <section className="py-16 md:py-24 bg-gradient-radial-bottom">
         <div className="mx-auto max-w-7xl px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              Why ETHINX
+              Why <span className="text-gradient-gold">ETHINX</span>
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
               The professional headshot solution built for modern professionals
@@ -164,6 +189,31 @@ export default function Index() {
                 T-DOG Certified means verified likeness. If it doesn't look like you, we regenerate or refund.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 md:py-28">
+        <div className="mx-auto max-w-4xl px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+            Ready to <span className="text-gradient-gold">Transform</span> Your Image?
+          </h2>
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+            Join thousands of professionals who have upgraded their online presence with AI-powered headshots.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link to="/pricing">
+              <Button size="lg" className="bg-primary text-primary-foreground font-semibold hover:bg-primary/90">
+                View Pricing
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link to="/examples">
+              <Button size="lg" variant="outline" className="border-border font-semibold">
+                See More Examples
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

@@ -16,34 +16,34 @@ export const featuredExamples: Pair[] = [
   { before: "/examples/brian/before.jpg", after: "/examples/brian/after (1).jpg", alt: "Brian before and after" },
 ];
 
-// Industry-specific styles (behind tiles/buttons)
+// Industry-specific styles - using flat folder structure
 export const styles: StyleBlock[] = [
   {
     id: "tradie",
     label: "Tradie",
     male: [
       {
-        before: "/examples/tradie/male/tradie_male_before.jpg",
-        after: "/examples/tradie/male/tradie_male_after.jpg",
+        before: "/examples/tradie-male/before.jpg",
+        after: "/examples/tradie-male/after.jpg",
         alt: "Tradie male before and after",
       },
     ],
-    female: [],
+    female: [], // No tradie female examples yet
   },
   {
     id: "creative",
     label: "Creative",
     male: [
       {
-        before: "/examples/creative/male/creative_male_before.jpg",
-        after: "/examples/creative/male/creative_male_after.jpg",
+        before: "/examples/creative-male/before.jpg",
+        after: "/examples/creative-male/after.jpg",
         alt: "Creative male before and after",
       },
     ],
     female: [
       {
-        before: "/examples/creative/female/creative_female_before.jpg",
-        after: "/examples/creative/female/creative_female_after.jpg",
+        before: "/examples/creative-female/before.jpg",
+        after: "/examples/creative-female/after.jpg",
         alt: "Creative female before and after",
       },
     ],
@@ -53,15 +53,15 @@ export const styles: StyleBlock[] = [
     label: "Corporate",
     male: [
       {
-        before: "/examples/corporate/male/corporate_male_before.jpg",
-        after: "/examples/corporate/male/corporate_male_after.jpg",
+        before: "/examples/corporate-male/before.jpg",
+        after: "/examples/corporate-male/after.jpg",
         alt: "Corporate male before and after",
       },
     ],
     female: [
       {
-        before: "/examples/corporate/female/corporate_female_before.jpg",
-        after: "/examples/corporate/female/corporate_female_after.png",
+        before: "/examples/corporate-female/before.jpg",
+        after: "/examples/corporate-female/after.png",
         alt: "Corporate female before and after",
       },
     ],
@@ -69,11 +69,11 @@ export const styles: StyleBlock[] = [
   {
     id: "realestate",
     label: "Real Estate",
-    male: [],
+    male: [], // No real estate male examples yet
     female: [
       {
-        before: "/examples/realestate/female/realestate_female_before.jpg",
-        after: "/examples/realestate/female/realestate_female_after.jpg",
+        before: "/examples/realestate-female/before.jpg",
+        after: "/examples/realestate-female/after.jpg",
         alt: "Real estate female before and after",
       },
     ],
@@ -83,15 +83,15 @@ export const styles: StyleBlock[] = [
     label: "Health",
     male: [
       {
-        before: "/examples/health/male/health_male_before.jpg",
-        after: "/examples/health/male/health_male_after.jpg",
+        before: "/examples/health-male/before.jpg",
+        after: "/examples/health-male/after.jpg",
         alt: "Health male before and after",
       },
     ],
     female: [
       {
-        before: "/examples/health/female/health_female_before.jpg",
-        after: "/examples/health/female/health_female_after.png",
+        before: "/examples/health-female/before.jpg",
+        after: "/examples/health-female/after.png",
         alt: "Health female before and after",
       },
     ],
