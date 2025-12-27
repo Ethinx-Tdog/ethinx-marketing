@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-
+import { BRAND } from "@/lib/brand";
 export default function BeforeAfterSlider({ before, after }:{
   before: string; after: string;
 }) {
@@ -36,6 +36,13 @@ export default function BeforeAfterSlider({ before, after }:{
     >
       {/* AFTER base */}
       <img src={after} className="absolute inset-0 h-full w-full object-cover" alt="after" />
+      
+      {/* T-DOG badge on after image */}
+      <img 
+        src={BRAND.TDOG} 
+        alt="T-DOG Certified" 
+        className="pointer-events-none absolute right-3 bottom-10 h-8 w-8 object-contain opacity-90"
+      />
 
       {/* BEFORE clipped to slider position */}
       <div style={{ width: `${xPct}%` }} className="absolute inset-0 overflow-hidden">
