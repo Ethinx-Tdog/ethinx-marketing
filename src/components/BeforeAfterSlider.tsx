@@ -102,7 +102,7 @@ export default function BeforeAfterSlider({
         />
       </div>
 
-      {/* Handle + divider - Brand Gold #FBBF24 */}
+      {/* Handle + divider */}
       <div
         role="slider"
         aria-label="Comparison slider"
@@ -113,15 +113,15 @@ export default function BeforeAfterSlider({
         onMouseDown={() => setDragging(true)}
         onKeyDown={handleKeyDown}
         style={{ left: `calc(${xPct}% - 16px)` }}
-        className="absolute top-0 bottom-0 w-8 cursor-col-resize flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FBBF24]"
+        className="absolute top-0 bottom-0 w-8 cursor-col-resize flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         {/* Vertical line */}
-        <div className="h-full w-[2px] bg-[#FBBF24] shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
+        <div className="h-full w-[2px] bg-primary shadow-gold" />
         {/* Handle circle */}
-        <div className="absolute top-1/2 -translate-y-1/2 h-10 w-10 rounded-full border-2 border-[#FBBF24] bg-black/80 flex items-center justify-center shadow-lg">
+        <div className="absolute top-1/2 -translate-y-1/2 h-10 w-10 rounded-full border-2 border-primary bg-background flex items-center justify-center shadow-gold">
           <div className="flex gap-0.5">
-            <div className="w-0.5 h-4 bg-[#FBBF24] rounded-full" />
-            <div className="w-0.5 h-4 bg-[#FBBF24] rounded-full" />
+            <div className="w-0.5 h-4 bg-primary rounded-full" />
+            <div className="w-0.5 h-4 bg-primary rounded-full" />
           </div>
         </div>
       </div>
