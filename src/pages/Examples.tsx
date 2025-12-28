@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StyleTiles from "@/components/StyleTiles";
+import BeforeAfterSlider from "@/components/BeforeAfterSlider";
+import { featuredExamples } from "@/data/examples";
 import SEO from "@/components/SEO";
 
 export default function Examples() {
@@ -29,11 +31,34 @@ export default function Examples() {
           </Link>
         </section>
 
+        {/* Featured Examples - Personal transformations */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
+            Featured <span className="text-gradient-gold">Transformations</span>
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredExamples.map((pair, idx) => (
+              <div key={idx} className="rounded-2xl overflow-hidden border border-border bg-card">
+                <BeforeAfterSlider
+                  before={pair.before}
+                  after={pair.after}
+                  alt={pair.alt}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Style Tiles Section - Industry examples */}
-        <StyleTiles />
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
+            Browse by <span className="text-gradient-gold">Industry</span>
+          </h2>
+          <StyleTiles />
+        </section>
 
         {/* CTA Section */}
-        <section className="text-center py-16 border-t border-border mt-16">
+        <section className="text-center py-16 border-t border-border">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to <span className="text-gradient-gold">Transform</span> Your Image?
           </h2>

@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ScrollToTop from "@/components/ScrollToTop";
 import { UpsellModal } from "@/components/UpsellModal";
 import Index from "@/pages/Index";
 import Examples from "@/pages/Examples";
@@ -24,6 +25,7 @@ import SocialInfluencerPhotos from "@/pages/industries/SocialInfluencerPhotos";
 export default function App() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <ScrollToTop />
       <Header />
       <main className="flex-1">
         <Routes>
