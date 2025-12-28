@@ -34,8 +34,12 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2" aria-label="ETHINX Home">
-          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-12 w-auto" />
+        <Link to="/" className="flex items-center gap-2 group" aria-label="ETHINX Home">
+          <img 
+            src={BRAND.LOGO} 
+            alt="ETHINX logo" 
+            className="h-12 w-auto transition-all duration-300 group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" 
+          />
         </Link>
 
         {/* Desktop Nav */}
