@@ -114,24 +114,34 @@ export default function Header() {
         </div>
 
         <nav className="flex flex-col p-4 gap-1">
-          {navLinks.map((link) => (
+          {navLinks.map((link, index) => (
             <NavLink
               key={link.to}
               to={link.to}
               onClick={closeMenu}
               className={({ isActive }) =>
-                `block px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                `block px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
                   isActive
                     ? "bg-primary/10 text-primary"
                     : "text-foreground hover:bg-secondary"
-                }`
+                } ${isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"}`
               }
+              style={{ 
+                transitionDelay: isOpen ? `${(index + 1) * 75}ms` : '0ms'
+              }}
             >
               {link.label}
             </NavLink>
           ))}
 
-          <div className="mt-6 pt-4 border-t border-border space-y-3">
+          <div 
+            className={`mt-6 pt-4 border-t border-border space-y-3 transition-all duration-300 ${
+              isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+            }`}
+            style={{ 
+              transitionDelay: isOpen ? `${(navLinks.length + 1) * 75}ms` : '0ms'
+            }}
+          >
             <Link
               to="/pricing"
               onClick={closeMenu}
