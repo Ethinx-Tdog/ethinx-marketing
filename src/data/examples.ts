@@ -10,7 +10,7 @@ export type StyleBlock = {
 export const featuredExamples: Pair[] = [
   { before: "/examples/nicole/before.jpg", after: "/examples/nicole/after.jpg", alt: "Nicole before and after" },
   { before: "/examples/jimmy/before.jpg", after: "/examples/jimmy/after.jpg", alt: "Jimmy before and after" },
-  { before: "/examples/luke/before (1).jpg", after: "/examples/luke/after.jpg", alt: "Luke before and after" },
+  { before: "/examples/luke/before.jpg", after: "/examples/luke/after.jpg", alt: "Luke before and after" },
   { before: "/examples/cody/before.jpg", after: "/examples/cody/after.jpg", alt: "Cody before and after" },
   { before: "/examples/boys/before.jpg", after: "/examples/boys/after.jpg", alt: "Boys before and after" },
   { before: "/examples/brian/before.jpg", after: "/examples/brian/after.jpg", alt: "Brian before and after" },
