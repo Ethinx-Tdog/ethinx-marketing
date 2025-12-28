@@ -35,7 +35,7 @@ export default function Header() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2" aria-label="ETHINX Home">
-          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-8 w-auto" />
+          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-12 w-auto" />
         </Link>
 
         {/* Desktop Nav */}
@@ -96,7 +96,7 @@ export default function Header() {
         aria-label="Mobile navigation"
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-7 w-auto" />
+          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-10 w-auto" />
           <button
             onClick={closeMenu}
             className="p-2 text-foreground hover:text-primary transition-colors"
