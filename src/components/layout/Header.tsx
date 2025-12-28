@@ -32,7 +32,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl overflow-visible">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 h-20 md:h-24">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 h-24 pt-8 pb-4">
         {/* Logo */}
         <Link to="/" className="flex items-center group" aria-label="ETHINX Home">
           <img 
