@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
-import { Shield, CreditCard, BadgeCheck, Check } from "lucide-react";
+import { Shield, CreditCard, BadgeCheck, Check, Award, Clock, Sparkles } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
 import { usePricing } from "@/contexts/PricingContext";
+import { IndustrySelector } from "@/components/IndustrySelector";
 import type { PackageId } from "@/lib/pricing-config";
 
 interface Plan {
@@ -11,8 +12,11 @@ interface Plan {
   name: string;
   price: number;
   photos: number;
+  delivery: string;
   popular?: boolean;
+  tdogCertified?: boolean;
   features: string[];
+  highlight?: string;
 }
 
 const plans: Plan[] = [
@@ -21,6 +25,7 @@ const plans: Plan[] = [
     name: "Starter",
     price: 49,
     photos: 15,
+    delivery: "24h delivery",
     features: [
       "15 professional headshots",
       "3 outfit styles",
@@ -34,7 +39,9 @@ const plans: Plan[] = [
     name: "Professional",
     price: 89,
     photos: 30,
+    delivery: "12h priority",
     popular: true,
+    tdogCertified: true,
     features: [
       "30 professional headshots",
       "5 outfit styles",
@@ -50,11 +57,15 @@ const plans: Plan[] = [
     name: "Ultimate",
     price: 149,
     photos: 50,
+    delivery: "6h express",
+    tdogCertified: true,
+    highlight: "AI Bio Suite",
     features: [
       "50 professional headshots",
       "8 outfit styles",
       "Unlimited backgrounds",
       "6-hour express delivery",
+      "AI Bio Suite included",
       "15 lifestyle location shots",
       "Complete social media pack",
       "Team discounts available",
@@ -64,7 +75,7 @@ const plans: Plan[] = [
 ];
 
 export default function Pricing() {
-  const { selectPackage } = usePricing();
+  const { selectPackage, industry } = usePricing();
 
   return (
     <>
@@ -75,7 +86,7 @@ export default function Pricing() {
       <main className="py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4">
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
               Choose Your <span className="text-gradient-gold">Package</span>
             </h1>
@@ -84,22 +95,52 @@ export default function Pricing() {
             </p>
           </div>
 
+          {/* Industry Selector */}
+          <div className="mb-12">
+            <p className="text-center text-sm text-muted-foreground mb-4">
+              Select your industry for tailored recommendations
+            </p>
+            <IndustrySelector />
+          </div>
+
           {/* Pricing Cards */}
           <div className="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto mb-12">
             {plans.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative flex flex-col p-8 rounded-2xl border ${
+                className={`relative flex flex-col p-8 rounded-2xl border-2 ${
                   plan.popular
-                    ? "border-primary bg-card shadow-gold"
-                    : "border-border bg-card"
+                    ? "border-primary bg-card shadow-gold-lg"
+                    : "border-border bg-card hover:border-primary/30 transition-colors"
                 }`}
               >
+                {/* Popular badge */}
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-                      <BadgeCheck className="h-3 w-3" />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-gold">
+                      <Award className="h-3.5 w-3.5" />
                       Most Popular
+                    </span>
+                  </div>
+                )}
+
+                {/* T-DOG Badge */}
+                {plan.tdogCertified && (
+                  <div className="absolute -top-2 -right-2">
+                    <img 
+                      src={BRAND.TDOG} 
+                      alt="T-DOG Certified" 
+                      className="h-12 w-12 drop-shadow-lg"
+                    />
+                  </div>
+                )}
+
+                {/* Highlight tag */}
+                {plan.highlight && (
+                  <div className="mb-4">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/30 px-3 py-1 text-xs font-medium text-primary">
+                      <Sparkles className="h-3 w-3" />
+                      {plan.highlight}
                     </span>
                   </div>
                 )}
@@ -107,12 +148,17 @@ export default function Pricing() {
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-4xl font-bold">${plan.price}</span>
+                    <span className="text-4xl font-bold text-gradient-gold">${plan.price}</span>
                     <span className="text-muted-foreground">AUD</span>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {plan.photos} headshots
-                  </p>
+                  <div className="flex items-center justify-center gap-2 mt-2 text-sm text-muted-foreground">
+                    <span>{plan.photos} headshots</span>
+                    <span className="text-border">•</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {plan.delivery}
+                    </span>
+                  </div>
                 </div>
 
                 <ul className="flex-1 space-y-3 mb-8">
@@ -126,9 +172,9 @@ export default function Pricing() {
 
                 <Button
                   onClick={() => selectPackage(plan.id)}
-                  className={`w-full ${
+                  className={`w-full font-semibold ${
                     plan.popular
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-gold"
                       : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                   }`}
                 >
@@ -167,7 +213,7 @@ export default function Pricing() {
               <div className="text-left">
                 <div className="flex items-center gap-2">
                   <BadgeCheck className="h-5 w-5 text-primary" />
-                  <span className="font-semibold text-foreground">T-DOG Certified</span>
+                  <span className="font-semibold text-foreground">T-DOG Certified Quality Control</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Money-back guarantee if it doesn't look like you
