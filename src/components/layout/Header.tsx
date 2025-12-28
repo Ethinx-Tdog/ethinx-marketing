@@ -32,13 +32,13 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl overflow-visible">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 h-24 pt-8 pb-4">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-8 h-20 md:h-24 py-4 md:py-5">
         {/* Logo */}
         <Link to="/" className="flex items-center group" aria-label="ETHINX Home">
           <img 
             src={BRAND.LOGO} 
             alt="ETHINX logo" 
-            className="h-12 md:h-16 w-auto object-contain animate-fade-in transition-all duration-300 group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" 
+            className="h-10 md:h-14 w-auto object-contain antialiased transform-gpu drop-shadow-[0_0_15px_rgba(245,158,11,0.1)] animate-fade-in transition-all duration-300 group-hover:scale-105 group-hover:drop-shadow-[0_0_12px_rgba(245,158,11,0.3)]" 
           />
         </Link>
 
