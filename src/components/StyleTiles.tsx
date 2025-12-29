@@ -10,8 +10,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   HardHat,
-  Palette,
-  Briefcase,
+  Sparkles,
+  Search,
   Home,
   HeartPulse,
   User,
@@ -20,16 +20,16 @@ import {
 
 const styleIcons: Record<StyleBlock["id"], React.ReactNode> = {
   tradie: <HardHat className="h-8 w-8" />,
-  creative: <Palette className="h-8 w-8" />,
-  corporate: <Briefcase className="h-8 w-8" />,
+  dreamscene: <Sparkles className="h-8 w-8" />,
+  jobseeker: <Search className="h-8 w-8" />,
   realestate: <Home className="h-8 w-8" />,
   health: <HeartPulse className="h-8 w-8" />,
 };
 
 const styleGradients: Record<StyleBlock["id"], string> = {
   tradie: "from-orange-500/20 to-amber-600/20",
-  creative: "from-purple-500/20 to-pink-500/20",
-  corporate: "from-blue-500/20 to-slate-600/20",
+  dreamscene: "from-purple-500/20 to-pink-500/20",
+  jobseeker: "from-blue-500/20 to-slate-600/20",
   realestate: "from-emerald-500/20 to-teal-600/20",
   health: "from-cyan-500/20 to-blue-500/20",
 };
