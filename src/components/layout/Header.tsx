@@ -91,12 +91,11 @@ export default function Header() {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-xs border-l border-border shadow-2xl transform lg:hidden ${
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-xs border-l border-border bg-background shadow-2xl transform lg:hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
-        style={{ 
-          backgroundColor: 'hsl(0, 0%, 5%)',
-          transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        style={{
+          transition: "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
         role="dialog"
         aria-modal="true"
