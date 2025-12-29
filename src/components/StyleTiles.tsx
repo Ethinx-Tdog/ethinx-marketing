@@ -19,19 +19,19 @@ import {
 } from "lucide-react";
 
 const styleIcons: Record<StyleBlock["id"], React.ReactNode> = {
-  tradie: <HardHat className="h-8 w-8" />,
-  dreamscene: <Sparkles className="h-8 w-8" />,
-  jobseeker: <Search className="h-8 w-8" />,
-  realestate: <Home className="h-8 w-8" />,
-  health: <HeartPulse className="h-8 w-8" />,
+  tradie: <HardHat className="h-6 w-6" />,
+  dreamscene: <Sparkles className="h-6 w-6" />,
+  jobseeker: <Search className="h-6 w-6" />,
+  realestate: <Home className="h-6 w-6" />,
+  health: <HeartPulse className="h-6 w-6" />,
 };
 
-const styleGradients: Record<StyleBlock["id"], string> = {
-  tradie: "from-orange-500/20 to-amber-600/20",
-  dreamscene: "from-purple-500/20 to-pink-500/20",
-  jobseeker: "from-blue-500/20 to-slate-600/20",
-  realestate: "from-emerald-500/20 to-teal-600/20",
-  health: "from-cyan-500/20 to-blue-500/20",
+const styleImages: Record<StyleBlock["id"], string> = {
+  tradie: "/examples/tradie-male/after.jpg",
+  dreamscene: "/examples/creative-female/after.jpg",
+  jobseeker: "/examples/corporate-male/after.jpg",
+  realestate: "/examples/realestate-female/after.jpg",
+  health: "/examples/health-male/after.jpg",
 };
 
 export default function StyleTiles() {
@@ -77,26 +77,38 @@ export default function StyleTiles() {
         women.
       </p>
 
-      {/* Masonry Style Tiles */}
+      {/* Image-based Style Tiles */}
       <div className="columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
         {styles.map((style, index) => {
-          // Alternate heights for masonry effect
-          const heightClass = index % 3 === 0 ? "h-48" : index % 3 === 1 ? "h-64" : "h-56";
+          const heightClass = index % 3 === 0 ? "h-56" : index % 3 === 1 ? "h-72" : "h-64";
           return (
             <button
               key={style.id}
               onClick={() => openModal(style)}
               aria-label={`View ${style.label} examples`}
-              className={`group relative w-full ${heightClass} break-inside-avoid flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-border bg-gradient-to-br ${styleGradients[style.id]} hover:border-primary/50 hover:scale-[1.02] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+              className={`group relative w-full ${heightClass} break-inside-avoid overflow-hidden rounded-2xl shadow-lg shadow-black/30 hover:shadow-xl hover:shadow-black/40 hover:scale-[1.02] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
             >
-              <div className="text-primary group-hover:scale-110 transition-transform">
-                {styleIcons[style.id]}
+              {/* Background Image */}
+              <img
+                src={styleImages[style.id]}
+                alt={style.label}
+                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110"
+              />
+              
+              {/* Dark Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+              
+              {/* Content */}
+              <div className="absolute inset-0 flex flex-col items-center justify-end p-5 text-center">
+                <div className="text-primary mb-2 opacity-90 group-hover:opacity-100 transition-opacity">
+                  {styleIcons[style.id]}
+                </div>
+                <span className="font-bold text-white text-lg drop-shadow-lg">{style.label}</span>
+                <span className="text-xs text-primary/90 mt-1">
+                  {style.male.length + style.female.length} example
+                  {style.male.length + style.female.length !== 1 ? "s" : ""}
+                </span>
               </div>
-              <span className="font-semibold text-foreground">{style.label}</span>
-              <span className="text-xs text-muted-foreground">
-                {style.male.length + style.female.length} example
-                {style.male.length + style.female.length !== 1 ? "s" : ""}
-              </span>
             </button>
           );
         })}
