@@ -77,25 +77,29 @@ export default function StyleTiles() {
         women.
       </p>
 
-      {/* Style Tiles Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-        {styles.map((style) => (
-          <button
-            key={style.id}
-            onClick={() => openModal(style)}
-            aria-label={`View ${style.label} examples`}
-            className={`group relative flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-border bg-gradient-to-br ${styleGradients[style.id]} hover:border-primary/50 hover:scale-[1.02] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
-          >
-            <div className="text-primary group-hover:scale-110 transition-transform">
-              {styleIcons[style.id]}
-            </div>
-            <span className="font-semibold text-foreground">{style.label}</span>
-            <span className="text-xs text-muted-foreground">
-              {style.male.length + style.female.length} example
-              {style.male.length + style.female.length !== 1 ? "s" : ""}
-            </span>
-          </button>
-        ))}
+      {/* Masonry Style Tiles */}
+      <div className="columns-2 md:columns-3 lg:columns-5 gap-4 space-y-4">
+        {styles.map((style, index) => {
+          // Alternate heights for masonry effect
+          const heightClass = index % 3 === 0 ? "h-48" : index % 3 === 1 ? "h-64" : "h-56";
+          return (
+            <button
+              key={style.id}
+              onClick={() => openModal(style)}
+              aria-label={`View ${style.label} examples`}
+              className={`group relative w-full ${heightClass} break-inside-avoid flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-border bg-gradient-to-br ${styleGradients[style.id]} hover:border-primary/50 hover:scale-[1.02] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+            >
+              <div className="text-primary group-hover:scale-110 transition-transform">
+                {styleIcons[style.id]}
+              </div>
+              <span className="font-semibold text-foreground">{style.label}</span>
+              <span className="text-xs text-muted-foreground">
+                {style.male.length + style.female.length} example
+                {style.male.length + style.female.length !== 1 ? "s" : ""}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Modal */}
