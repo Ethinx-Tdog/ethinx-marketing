@@ -18,6 +18,13 @@ import {
   ImageOff,
 } from "lucide-react";
 
+// Import generated tile images
+import tradieTile from "@/assets/tiles/tradie-tile.jpg";
+import dreamsceneTile from "@/assets/tiles/dreamscene-tile.jpg";
+import jobseekerTile from "@/assets/tiles/jobseeker-tile.jpg";
+import realestateTile from "@/assets/tiles/realestate-tile.jpg";
+import healthTile from "@/assets/tiles/health-tile.jpg";
+
 const styleIcons: Record<StyleBlock["id"], React.ReactNode> = {
   tradie: <HardHat className="h-6 w-6" />,
   dreamscene: <Sparkles className="h-6 w-6" />,
@@ -27,11 +34,11 @@ const styleIcons: Record<StyleBlock["id"], React.ReactNode> = {
 };
 
 const styleImages: Record<StyleBlock["id"], string> = {
-  tradie: "/examples/tradie-male/after.jpg",
-  dreamscene: "/examples/creative-female/after.jpg",
-  jobseeker: "/examples/corporate-male/after.jpg",
-  realestate: "/examples/realestate-female/after.jpg",
-  health: "/examples/health-male/after.jpg",
+  tradie: tradieTile,
+  dreamscene: dreamsceneTile,
+  jobseeker: jobseekerTile,
+  realestate: realestateTile,
+  health: healthTile,
 };
 
 export default function StyleTiles() {
