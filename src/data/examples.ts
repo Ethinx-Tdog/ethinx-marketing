@@ -1,6 +1,6 @@
 export type Pair = { before: string; after: string; alt: string };
 export type StyleBlock = {
-  id: "corporate" | "realestate" | "tradie" | "health" | "creative";
+  id: "jobseeker" | "realestate" | "tradie" | "health" | "dreamscene";
   label: string;
   male: Pair[];
   female: Pair[];
@@ -31,38 +31,38 @@ export const styles: StyleBlock[] = [
     female: [], // No tradie female examples yet
   },
   {
-    id: "creative",
-    label: "Creative",
+    id: "dreamscene",
+    label: "Dream Scene",
     male: [
       {
         before: "/examples/creative-male/before.jpg",
         after: "/examples/creative-male/after.jpg",
-        alt: "Creative male before and after",
+        alt: "Dream Scene male before and after",
       },
     ],
     female: [
       {
         before: "/examples/creative-female/before.jpg",
         after: "/examples/creative-female/after.jpg",
-        alt: "Creative female before and after",
+        alt: "Dream Scene female before and after",
       },
     ],
   },
   {
-    id: "corporate",
-    label: "Corporate",
+    id: "jobseeker",
+    label: "Job Seeker",
     male: [
       {
         before: "/examples/corporate-male/before.jpg",
         after: "/examples/corporate-male/after.jpg",
-        alt: "Corporate male before and after",
+        alt: "Job Seeker male before and after",
       },
     ],
     female: [
       {
         before: "/examples/corporate-female/before.jpg",
         after: "/examples/corporate-female/after.png",
-        alt: "Corporate female before and after",
+        alt: "Job Seeker female before and after",
       },
     ],
   },
