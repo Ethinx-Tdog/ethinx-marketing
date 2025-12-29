@@ -69,7 +69,13 @@ export const styles: StyleBlock[] = [
   {
     id: "realestate",
     label: "Real Estate",
-    male: [], // No real estate male examples yet
+    male: [
+      {
+        before: "/examples/realestate-male/before.jpg",
+        after: "/examples/realestate-male/after.jpg",
+        alt: "Real estate male before and after",
+      },
+    ],
     female: [
       {
         before: "/examples/realestate-female/before.jpg",
