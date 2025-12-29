@@ -119,10 +119,10 @@ export default function Header() {
               to={link.to}
               onClick={closeMenu}
               className={({ isActive }) =>
-                `block px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ${
+                `block px-4 py-3 rounded-r-lg text-base font-medium transition-all duration-300 border-l-2 ${
                   isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-secondary"
+                    ? "border-l-primary bg-primary/10 text-primary"
+                    : "border-l-transparent text-foreground hover:border-l-primary/50 hover:bg-secondary"
                 } ${isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"}`
               }
               style={{ 
