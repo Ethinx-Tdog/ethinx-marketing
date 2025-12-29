@@ -95,9 +95,7 @@ export default function Header() {
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         style={{
-          backgroundColor: "#000000",
-          backgroundImage: "none",
-          opacity: 1,
+          background: "#000000",
           transition: "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
         role="dialog"
