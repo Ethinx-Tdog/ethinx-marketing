@@ -91,22 +91,22 @@ export default function Header() {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-xs border-l border-border shadow-2xl transform lg:hidden ${
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-xs border-l border-primary/20 shadow-2xl transform lg:hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
         style={{
-          background: "#000000",
+          background: "linear-gradient(180deg, #0B0B0B 0%, #111111 100%)",
           transition: "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
         role="dialog"
         aria-modal="true"
         aria-label="Mobile navigation"
       >
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-10 w-auto" />
+        <div className="flex items-center justify-between p-4 border-b border-primary/20">
+          <img src={BRAND.LOGO} alt="ETHINX logo" className="h-10 w-auto drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]" />
           <button
             onClick={closeMenu}
-            className="p-2 text-foreground hover:text-primary transition-colors"
+            className="p-2 text-white hover:text-primary transition-colors"
             aria-label="Close menu"
           >
             <X className="h-6 w-6" />
@@ -122,8 +122,8 @@ export default function Header() {
               className={({ isActive }) =>
                 `block px-4 py-3 rounded-r-lg text-base font-medium transition-all duration-300 border-l-2 ${
                   isActive
-                    ? "border-l-primary bg-primary/10 text-primary"
-                    : "border-l-transparent text-foreground hover:border-l-primary/50 hover:bg-secondary"
+                    ? "border-l-primary bg-primary/15 text-primary"
+                    : "border-l-transparent text-white hover:border-l-primary/50 hover:bg-white/5 hover:text-primary"
                 } ${isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"}`
               }
               style={{ 
@@ -135,7 +135,7 @@ export default function Header() {
           ))}
 
           <div 
-            className={`mt-6 pt-4 border-t border-border space-y-3 transition-all duration-300 ${
+            className={`mt-6 pt-4 border-t border-primary/20 space-y-3 transition-all duration-300 ${
               isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
             }`}
             style={{ 
@@ -145,14 +145,14 @@ export default function Header() {
             <Link
               to="/pricing"
               onClick={closeMenu}
-              className="block w-full text-center rounded-lg bg-primary px-5 py-3 font-medium text-primary-foreground transition-all hover:bg-primary/90"
+              className="block w-full text-center rounded-lg bg-primary px-5 py-3 font-semibold text-primary-foreground transition-all hover:bg-primary/90 shadow-lg shadow-primary/20"
             >
               Upload Photos
             </Link>
             <Link
               to="/contact"
               onClick={closeMenu}
-              className="block w-full text-center rounded-lg border border-border px-5 py-3 font-medium text-foreground transition-all hover:bg-secondary"
+              className="block w-full text-center rounded-lg border border-primary/30 px-5 py-3 font-medium text-white transition-all hover:bg-primary/10 hover:border-primary/50"
             >
               Contact Us
             </Link>
