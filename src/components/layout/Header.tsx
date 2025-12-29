@@ -96,6 +96,8 @@ export default function Header() {
         }`}
         style={{
           backgroundColor: "#000000",
+          backgroundImage: "none",
+          opacity: 1,
           transition: "transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
         role="dialog"
