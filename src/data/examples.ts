@@ -71,8 +71,8 @@ export const styles: StyleBlock[] = [
     label: "Real Estate",
     male: [
       {
-        before: "/examples/realestate-male/before.jpg",
-        after: "/examples/realestate-male/after.jpg",
+        before: "/examples/realestate-male/before.webp",
+        after: "/examples/realestate-male/after.png",
         alt: "Real estate male before and after",
       },
     ],
