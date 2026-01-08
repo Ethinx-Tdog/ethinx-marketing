@@ -10,7 +10,10 @@ import {
   RefreshCw,
   ArrowLeft,
   Eye,
-  LogOut
+  LogOut,
+  DollarSign,
+  TrendingUp,
+  ShoppingCart
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -111,6 +114,19 @@ export default function AdminOrders() {
     );
   });
 
+  // Calculate stats from all orders (not filtered)
+  const stats = {
+    total: orders.length,
+    revenue: orders
+      .filter((o) => o.status === "paid" || o.status === "processing" || o.status === "completed")
+      .reduce((sum, o) => sum + o.amount_cents, 0),
+    pending: orders.filter((o) => o.status === "pending").length,
+    paid: orders.filter((o) => o.status === "paid").length,
+    processing: orders.filter((o) => o.status === "processing").length,
+    completed: orders.filter((o) => o.status === "completed").length,
+    failed: orders.filter((o) => o.status === "failed").length,
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-AU", {
       day: "numeric",
@@ -174,6 +190,80 @@ export default function AdminOrders() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
+        {/* Stats Cards */}
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-gold/20 p-2">
+                <ShoppingCart className="h-5 w-5 text-gold" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Orders</p>
+                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-green-500/20 p-2">
+                <DollarSign className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Revenue</p>
+                <p className="text-2xl font-bold text-green-500">
+                  {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(stats.revenue / 100)}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-blue-500/20 p-2">
+                <TrendingUp className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Paid / Processing</p>
+                <p className="text-2xl font-bold text-blue-500">{stats.paid + stats.processing}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-green-500/20 p-2">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Status breakdown */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          <Badge variant="outline" className="bg-yellow-500/20 text-yellow-500">
+            <Clock className="mr-1 h-3 w-3" /> {stats.pending} Pending
+          </Badge>
+          <Badge variant="outline" className="bg-blue-500/20 text-blue-500">
+            <CheckCircle className="mr-1 h-3 w-3" /> {stats.paid} Paid
+          </Badge>
+          <Badge variant="outline" className="bg-purple-500/20 text-purple-500">
+            <RefreshCw className="mr-1 h-3 w-3" /> {stats.processing} Processing
+          </Badge>
+          <Badge variant="outline" className="bg-green-500/20 text-green-500">
+            <CheckCircle className="mr-1 h-3 w-3" /> {stats.completed} Completed
+          </Badge>
+          {stats.failed > 0 && (
+            <Badge variant="outline" className="bg-red-500/20 text-red-500">
+              <XCircle className="mr-1 h-3 w-3" /> {stats.failed} Failed
+            </Badge>
+          )}
+        </div>
+
         {/* Filters */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
