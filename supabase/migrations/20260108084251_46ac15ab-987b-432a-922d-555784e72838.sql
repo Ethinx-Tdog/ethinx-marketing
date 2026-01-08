@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Enable read for all" ON public.orders;
