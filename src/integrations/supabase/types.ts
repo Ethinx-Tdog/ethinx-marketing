@@ -76,6 +76,7 @@ export type Database = {
       }
       promo_events: {
         Row: {
+          ab_group: string | null
           created_at: string
           event_type: string
           id: string
@@ -86,6 +87,7 @@ export type Database = {
           variant: string
         }
         Insert: {
+          ab_group?: string | null
           created_at?: string
           event_type: string
           id?: string
@@ -96,6 +98,7 @@ export type Database = {
           variant?: string
         }
         Update: {
+          ab_group?: string | null
           created_at?: string
           event_type?: string
           id?: string
