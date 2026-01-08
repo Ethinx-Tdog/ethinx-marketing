@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Lock, BadgeCheck, ArrowRight, Star, Clock } from "lucide-react";
+import { Sparkles, Lock, BadgeCheck, ArrowRight, Star, Clock, X } from "lucide-react";
 import TrustStrip from "@/components/TrustStrip";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import HowItWorksSteps from "@/components/HowItWorksSteps";
@@ -22,6 +22,9 @@ export default function Index() {
 
   // Countdown timer - ends 7 days from now (reset on page load for demo)
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    return localStorage.getItem("promoBannerDismissed") === "true";
+  });
 
   useEffect(() => {
     // Set end date to 7 days from now
@@ -45,26 +48,40 @@ export default function Index() {
     return () => clearInterval(timer);
   }, []);
 
+  const dismissBanner = () => {
+    setBannerDismissed(true);
+    localStorage.setItem("promoBannerDismissed", "true");
+  };
+
   return (
     <main>
       {/* Promo Banner */}
-      <div className="bg-gradient-gold text-primary-foreground py-2.5 px-4">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-          <p className="text-sm font-medium">
-            🎉 Use code <span className="font-bold">WELCOME10</span> for 10% off!
-          </p>
-          <div className="flex items-center gap-1.5 text-xs font-semibold">
-            <Clock className="h-3.5 w-3.5" />
-            <span>Ends in:</span>
-            <div className="flex gap-1">
-              <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{timeLeft.days}d</span>
-              <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.hours).padStart(2, '0')}h</span>
-              <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.minutes).padStart(2, '0')}m</span>
-              <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.seconds).padStart(2, '0')}s</span>
+      {!bannerDismissed && (
+        <div className="bg-gradient-gold text-primary-foreground py-2.5 px-4 relative">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 pr-8">
+            <p className="text-sm font-medium">
+              🎉 Use code <span className="font-bold">WELCOME10</span> for 10% off!
+            </p>
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <Clock className="h-3.5 w-3.5" />
+              <span>Ends in:</span>
+              <div className="flex gap-1">
+                <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{timeLeft.days}d</span>
+                <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.hours).padStart(2, '0')}h</span>
+                <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.minutes).padStart(2, '0')}m</span>
+                <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.seconds).padStart(2, '0')}s</span>
+              </div>
             </div>
           </div>
+          <button
+            onClick={dismissBanner}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-primary-foreground/20 rounded transition-colors"
+            aria-label="Dismiss banner"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-      </div>
+      )}
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-radial">
