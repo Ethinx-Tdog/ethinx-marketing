@@ -290,6 +290,12 @@ export default function AdminOrders() {
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {user?.email}
             </span>
+            <Link to="/admin/promo-analytics">
+              <Button variant="outline" size="sm">
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Promo Analytics
+              </Button>
+            </Link>
             <Button onClick={exportCSV} variant="outline" size="sm" disabled={isExporting}>
               <Download className={cn("mr-2 h-4 w-4", isExporting && "animate-pulse")} />
               Export CSV
