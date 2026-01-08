@@ -14,7 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          amount_cents: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          email: string
+          id: string
+          order_token: string
+          package_name: string | null
+          paid_at: string | null
+          photo_count: number | null
+          photo_files: string[]
+          result_files: string[] | null
+          status: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          email: string
+          id?: string
+          order_token?: string
+          package_name?: string | null
+          paid_at?: string | null
+          photo_count?: number | null
+          photo_files?: string[]
+          result_files?: string[] | null
+          status?: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          email?: string
+          id?: string
+          order_token?: string
+          package_name?: string | null
+          paid_at?: string | null
+          photo_count?: number | null
+          photo_files?: string[]
+          result_files?: string[] | null
+          status?: Database["public"]["Enums"]["order_status"]
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +82,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      order_status:
+        | "pending"
+        | "paid"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "refunded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +215,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: [
+        "pending",
+        "paid",
+        "processing",
+        "completed",
+        "failed",
+        "refunded",
+      ],
+    },
   },
 } as const
