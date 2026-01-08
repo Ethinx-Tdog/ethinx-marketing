@@ -28,7 +28,13 @@ export const styles: StyleBlock[] = [
         alt: "Tradie male before and after",
       },
     ],
-    female: [], // No tradie female examples yet
+    female: [
+      {
+        before: "/examples/tradie-female/before.jpg",
+        after: "/examples/tradie-female/after.jpg",
+        alt: "Tradie female before and after",
+      },
+    ],
   },
   {
     id: "dreamscene",
