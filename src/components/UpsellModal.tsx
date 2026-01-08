@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Sparkles, Loader2 } from "lucide-react";
+import { Check, Sparkles, Loader2, Tag, X, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,17 @@ import { getIndustryUpsell, getPackageById, UPSELLS } from "@/lib/pricing-config
 import { cn } from "@/lib/utils";
 import { useCheckout } from "@/hooks/useCheckout";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+interface PromoValidation {
+  valid: boolean;
+  promoCodeId?: string;
+  code?: string;
+  discountLabel?: string;
+  discountPercent?: number | null;
+  discountAmountCents?: number | null;
+  message?: string;
+}
 
 export function UpsellModal() {
   const {
@@ -21,6 +32,9 @@ export function UpsellModal() {
   } = usePricing();
 
   const [email, setEmail] = useState("");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [appliedPromo, setAppliedPromo] = useState<PromoValidation | null>(null);
   const { redirectToCheckout, isLoading, error } = useCheckout();
 
   const pkg = selectedPackage ? getPackageById(selectedPackage) : null;
@@ -28,6 +42,58 @@ export function UpsellModal() {
   const addons = UPSELLS.filter((u) => u.isAddon);
 
   if (!pkg) return null;
+
+  // Calculate discounted price
+  const calculateDiscountedPrice = () => {
+    if (!appliedPromo?.valid) return totalPrice;
+    
+    if (appliedPromo.discountPercent) {
+      return Math.round(totalPrice * (1 - appliedPromo.discountPercent / 100));
+    }
+    if (appliedPromo.discountAmountCents) {
+      return Math.max(0, totalPrice - appliedPromo.discountAmountCents / 100);
+    }
+    return totalPrice;
+  };
+
+  const discountedPrice = calculateDiscountedPrice();
+  const hasDiscount = appliedPromo?.valid && discountedPrice < totalPrice;
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) {
+      toast.error("Please enter a promo code");
+      return;
+    }
+
+    setPromoLoading(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("validate-promo", {
+        body: { promoCode: promoCode.trim() },
+      });
+
+      if (fnError) {
+        toast.error("Failed to validate promo code");
+        return;
+      }
+
+      if (data?.valid) {
+        setAppliedPromo(data);
+        toast.success(`Promo applied: ${data.discountLabel}`);
+      } else {
+        toast.error(data?.message || "Invalid promo code");
+        setAppliedPromo(null);
+      }
+    } catch (err) {
+      toast.error("Failed to validate promo code");
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode("");
+  };
 
   const handleCheckout = async () => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -153,6 +219,54 @@ export function UpsellModal() {
             </div>
           </div>
 
+          {/* Promo code input */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              Promo Code
+            </label>
+            {appliedPromo?.valid ? (
+              <div className="flex items-center justify-between rounded-lg border border-green-500/50 bg-green-500/10 p-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium text-green-400">
+                    {appliedPromo.code} — {appliedPromo.discountLabel}
+                  </span>
+                </div>
+                <button
+                  onClick={handleRemovePromo}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Enter code (e.g. WELCOME10)"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
+                  className="bg-card border-border/50 uppercase"
+                  disabled={promoLoading}
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleApplyPromo}
+                  disabled={promoLoading || !promoCode.trim()}
+                  className="shrink-0"
+                >
+                  {promoLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Apply"
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Email input */}
           <div className="space-y-2">
             <label htmlFor="checkout-email" className="text-sm font-medium text-foreground">
@@ -173,7 +287,16 @@ export function UpsellModal() {
         <div className="flex items-center justify-between border-t border-border/50 pt-4">
           <div>
             <p className="text-sm text-muted-foreground">Total</p>
-            <p className="text-2xl font-bold text-gold">${totalPrice} AUD</p>
+            <div className="flex items-baseline gap-2">
+              {hasDiscount ? (
+                <>
+                  <p className="text-2xl font-bold text-gold">${discountedPrice} AUD</p>
+                  <p className="text-lg text-muted-foreground line-through">${totalPrice}</p>
+                </>
+              ) : (
+                <p className="text-2xl font-bold text-gold">${totalPrice} AUD</p>
+              )}
+            </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={closeUpsellModal} disabled={isLoading}>
