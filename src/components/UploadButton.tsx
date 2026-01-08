@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Upload, Loader2, CheckCircle, ImageIcon, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,8 @@ interface FileValidation {
   file: File;
   valid: boolean;
   error?: string;
+  status: "pending" | "uploading" | "done" | "error";
+  progress: number;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -20,12 +23,12 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "im
 function validateFiles(files: FileList | File[]): FileValidation[] {
   return Array.from(files).map((file) => {
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return { file, valid: false, error: `Invalid type: ${file.type.split("/")[1] || "unknown"}` };
+      return { file, valid: false, error: `Invalid type: ${file.type.split("/")[1] || "unknown"}`, status: "pending" as const, progress: 0 };
     }
     if (file.size > MAX_FILE_SIZE) {
-      return { file, valid: false, error: `Too large: ${(file.size / 1024 / 1024).toFixed(1)}MB` };
+      return { file, valid: false, error: `Too large: ${(file.size / 1024 / 1024).toFixed(1)}MB`, status: "pending" as const, progress: 0 };
     }
-    return { file, valid: true };
+    return { file, valid: true, status: "pending" as const, progress: 0 };
   });
 }
 
@@ -38,7 +41,7 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
 
   const handleFiles = useCallback((files: FileList | File[]) => {
     const validated = validateFiles(files);
-    setPendingFiles(validated);
+    setPendingFiles((prev) => [...prev, ...validated]);
   }, []);
 
   const removeFile = useCallback((index: number) => {
@@ -50,7 +53,7 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
   }, []);
 
   const uploadFiles = useCallback(async () => {
-    const validFiles = pendingFiles.filter((f) => f.valid).map((f) => f.file);
+    const validFiles = pendingFiles.filter((f) => f.valid && f.status === "pending");
     if (validFiles.length === 0) {
       toast({
         title: "No valid files",
@@ -62,45 +65,82 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
 
     setIsUploading(true);
 
-    try {
-      const arr = await Promise.all(
-        validFiles.map(async (f) => ({
-          name: f.name,
-          type: f.type,
-          base64: await f
-            .arrayBuffer()
-            .then((b) => btoa(String.fromCharCode(...new Uint8Array(b)))),
-        }))
+    let successCount = 0;
+
+    for (let i = 0; i < pendingFiles.length; i++) {
+      const item = pendingFiles[i];
+      if (!item.valid || item.status !== "pending") continue;
+
+      // Mark as uploading
+      setPendingFiles((prev) =>
+        prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" as const, progress: 10 } : f))
       );
 
-      const r = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-photo`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order_token: orderToken, files: arr }),
+      try {
+        // Convert to base64 with progress simulation
+        setPendingFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, progress: 30 } : f))
+        );
+
+        const base64 = await item.file
+          .arrayBuffer()
+          .then((b) => btoa(String.fromCharCode(...new Uint8Array(b))));
+
+        setPendingFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, progress: 50 } : f))
+        );
+
+        const r = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-photo`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              order_token: orderToken,
+              files: [{ name: item.file.name, type: item.file.type, base64 }],
+            }),
+          }
+        );
+
+        setPendingFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, progress: 90 } : f))
+        );
+
+        if (!r.ok) {
+          const error = await r.json().catch(() => ({ error: "Upload failed" }));
+          throw new Error(error.error || "Upload failed");
         }
-      );
 
-      if (!r.ok) {
-        const error = await r.json().catch(() => ({ error: "Upload failed" }));
-        throw new Error(error.error || "Upload failed");
+        // Mark as done
+        setPendingFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, status: "done" as const, progress: 100 } : f))
+        );
+        successCount++;
+      } catch (error) {
+        // Mark as error
+        setPendingFiles((prev) =>
+          prev.map((f, idx) =>
+            idx === i
+              ? { ...f, status: "error" as const, progress: 0, error: error instanceof Error ? error.message : "Failed" }
+              : f
+          )
+        );
       }
+    }
 
-      setUploadedCount((prev) => prev + validFiles.length);
-      setPendingFiles([]);
+    setIsUploading(false);
+
+    if (successCount > 0) {
+      setUploadedCount((prev) => prev + successCount);
       toast({
         title: "Photos uploaded!",
-        description: `Successfully uploaded ${validFiles.length} photo(s)`,
+        description: `Successfully uploaded ${successCount} photo(s)`,
       });
-    } catch (error) {
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
+
+      // Clear completed files after a delay
+      setTimeout(() => {
+        setPendingFiles((prev) => prev.filter((f) => f.status !== "done"));
+      }, 2000);
     }
   }, [orderToken, pendingFiles, toast]);
 
@@ -128,8 +168,15 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
     [handleFiles]
   );
 
-  const validCount = pendingFiles.filter((f) => f.valid).length;
+  const validPendingCount = pendingFiles.filter((f) => f.valid && f.status === "pending").length;
   const invalidCount = pendingFiles.filter((f) => !f.valid).length;
+  const uploadingCount = pendingFiles.filter((f) => f.status === "uploading").length;
+  const doneCount = pendingFiles.filter((f) => f.status === "done").length;
+
+  const overallProgress =
+    pendingFiles.length > 0
+      ? Math.round(pendingFiles.reduce((acc, f) => acc + f.progress, 0) / pendingFiles.length)
+      : 0;
 
   return (
     <div className="space-y-4">
@@ -168,7 +215,7 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
 
         <p className="mb-2 text-lg font-medium text-foreground">
           {isUploading
-            ? "Uploading..."
+            ? `Uploading... ${overallProgress}%`
             : uploadedCount > 0
             ? `${uploadedCount} photo(s) uploaded`
             : "Drop your photos here"}
@@ -178,27 +225,33 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
           {isDragging ? "Release to add files" : "JPEG, PNG, GIF, WebP • Max 10MB each"}
         </p>
 
-        <Button
-          variant="outline"
-          size="default"
-          disabled={isUploading}
-          className="pointer-events-none"
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          Browse Files
-        </Button>
+        {!isUploading && (
+          <Button variant="outline" size="default" disabled={isUploading} className="pointer-events-none">
+            <Upload className="mr-2 h-4 w-4" />
+            Browse Files
+          </Button>
+        )}
+
+        {isUploading && (
+          <Progress value={overallProgress} className="h-2 w-full max-w-xs" />
+        )}
       </label>
 
-      {/* File list with validation feedback */}
+      {/* File list with validation and progress feedback */}
       {pendingFiles.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-foreground">
-              {validCount} valid, {invalidCount} invalid
+              {validPendingCount > 0 && `${validPendingCount} ready`}
+              {doneCount > 0 && ` • ${doneCount} done`}
+              {uploadingCount > 0 && ` • ${uploadingCount} uploading`}
+              {invalidCount > 0 && ` • ${invalidCount} invalid`}
             </p>
-            <Button variant="ghost" size="sm" onClick={clearFiles}>
-              Clear all
-            </Button>
+            {!isUploading && (
+              <Button variant="ghost" size="sm" onClick={clearFiles}>
+                Clear all
+              </Button>
+            )}
           </div>
 
           <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-border/50 bg-card p-2">
@@ -206,52 +259,57 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
               <div
                 key={index}
                 className={cn(
-                  "flex items-center justify-between rounded-md px-3 py-2",
-                  item.valid ? "bg-green-500/10" : "bg-red-500/10"
+                  "relative overflow-hidden rounded-md px-3 py-2",
+                  item.status === "done" && "bg-green-500/10",
+                  item.status === "error" && "bg-red-500/10",
+                  item.status === "uploading" && "bg-gold/10",
+                  item.status === "pending" && item.valid && "bg-muted/50",
+                  !item.valid && item.status === "pending" && "bg-red-500/10"
                 )}
               >
-                <div className="flex items-center gap-2 overflow-hidden">
-                  {item.valid ? (
-                    <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-                  )}
-                  <span className="truncate text-sm">{item.file.name}</span>
-                  {item.error && (
-                    <span className="shrink-0 text-xs text-red-500">({item.error})</span>
+                {/* Progress bar background */}
+                {item.status === "uploading" && (
+                  <div
+                    className="absolute inset-0 bg-gold/20 transition-all"
+                    style={{ width: `${item.progress}%` }}
+                  />
+                )}
+
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    {item.status === "done" && <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />}
+                    {item.status === "error" && <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />}
+                    {item.status === "uploading" && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-gold" />}
+                    {item.status === "pending" && item.valid && <ImageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                    {item.status === "pending" && !item.valid && <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />}
+
+                    <span className="truncate text-sm">{item.file.name}</span>
+
+                    {item.status === "uploading" && (
+                      <span className="shrink-0 text-xs text-gold">{item.progress}%</span>
+                    )}
+
+                    {item.error && item.status !== "uploading" && (
+                      <span className="shrink-0 text-xs text-red-500">({item.error})</span>
+                    )}
+                  </div>
+
+                  {!isUploading && (
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => removeFile(index)}>
+                      <X className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => removeFile(index)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             ))}
           </div>
 
-          <Button
-            variant="gold"
-            size="lg"
-            className="w-full"
-            onClick={uploadFiles}
-            disabled={isUploading || validCount === 0}
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-5 w-5" />
-                Upload {validCount} Photo{validCount !== 1 ? "s" : ""}
-              </>
-            )}
-          </Button>
+          {validPendingCount > 0 && !isUploading && (
+            <Button variant="gold" size="lg" className="w-full" onClick={uploadFiles} disabled={isUploading}>
+              <Upload className="mr-2 h-5 w-5" />
+              Upload {validPendingCount} Photo{validPendingCount !== 1 ? "s" : ""}
+            </Button>
+          )}
         </div>
       )}
 
