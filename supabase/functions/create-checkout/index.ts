@@ -1,5 +1,5 @@
 import { serve } from "../_shared/deps.ts";
-import { sbAdmin } from "../_shared/supabase.ts";
+import { sbAdmin } from "../_shared/sb.ts";
 import { stripe } from "../_shared/stripe.ts";
 import { env } from "../_shared/env.ts";
 
