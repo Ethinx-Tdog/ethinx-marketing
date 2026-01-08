@@ -1,3 +1,5 @@
+import PromoBanner from "@/components/PromoBanner";
+
 export default function HowItWorks() {
   const steps = [
     { n: 1, t: "Upload 5–10 photos", d: "Different angles, good lighting, clear face." },
@@ -6,7 +8,9 @@ export default function HowItWorks() {
     { n: 4, t: "Delivery & download", d: "Email + portal access for 30 days." }
   ];
   return (
-    <main className="mx-auto max-w-7xl px-4 py-12">
+    <>
+      <PromoBanner />
+      <main className="mx-auto max-w-7xl px-4 py-12">
       <h1 className="text-3xl md:text-4xl font-semibold mb-6">How it works</h1>
       <ol className="grid gap-4 md:grid-cols-4">
         {steps.map(s => (
@@ -17,6 +21,7 @@ export default function HowItWorks() {
           </li>
         ))}
       </ol>
-    </main>
+      </main>
+    </>
   );
 }

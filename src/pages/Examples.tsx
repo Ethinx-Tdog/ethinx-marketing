@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StyleTiles from "@/components/StyleTiles";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
+import PromoBanner from "@/components/PromoBanner";
 import { featuredExamples } from "@/data/examples";
 import SEO from "@/components/SEO";
 
@@ -13,6 +14,7 @@ export default function Examples() {
         title="Examples — ETHINX"
         description="See real AI headshot transformations. Browse by style: Corporate, Real Estate, Tradie, Health, Creative."
       />
+      <PromoBanner />
       <main className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10">
         {/* Hero Section */}
         <section className="text-center mb-12">
