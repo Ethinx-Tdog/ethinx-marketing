@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Package, Clock, CheckCircle, XCircle, RefreshCw, Loader2, ArrowLeft } from "lucide-react";
+import { Package, Clock, CheckCircle, XCircle, RefreshCw, Loader2, ArrowLeft, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SEO } from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { OrderUploadButton } from "@/components/OrderUploadButton";
+import { ResultsGallery } from "@/components/ResultsGallery";
 
 interface Order {
   id: string;
@@ -19,6 +21,7 @@ interface Order {
   created_at: string;
   paid_at: string | null;
   completed_at: string | null;
+  result_files: string[] | null;
 }
 
 const STATUS_CONFIG: Record<string, { icon: typeof Clock; label: string; color: string; bg: string }> = {
@@ -216,6 +219,31 @@ export default function OrderStatus() {
                 </code>
               </div>
             </div>
+
+            {/* Upload section for paid/processing orders */}
+            {["paid", "processing"].includes(order.status) && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">Upload Your Photos</h3>
+                <p className="text-sm text-muted-foreground">
+                  Upload your selfies and we'll transform them into professional headshots.
+                </p>
+                <OrderUploadButton
+                  orderToken={order.order_token}
+                  onUploadComplete={() => fetchOrder(order.order_token)}
+                />
+              </div>
+            )}
+
+            {/* Results gallery for completed orders */}
+            {order.status === "completed" && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">Your Headshots</h3>
+                <ResultsGallery
+                  token={order.order_token}
+                  files={order.result_files || []}
+                />
+              </div>
+            )}
 
             {/* Help text */}
             <p className="text-center text-sm text-muted-foreground">
