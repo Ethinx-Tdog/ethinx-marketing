@@ -49,8 +49,8 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { packageId, upsellIds, email, photoFiles } = await req.json();
-    logStep("Request payload", { packageId, upsellIds, email, photoFileCount: photoFiles?.length });
+    const { packageId, upsellIds, email, photoFiles, promoGroup, promoVariant, sourcePage } = await req.json();
+    logStep("Request payload", { packageId, upsellIds, email, photoFileCount: photoFiles?.length, promoGroup, promoVariant, sourcePage });
 
     if (!packageId || !PRICE_MAP[packageId]) {
       throw new Error("Invalid package selected");
@@ -106,6 +106,9 @@ serve(async (req) => {
         currency: "aud",
         status: "pending",
         photo_files: photoFiles || [],
+        promo_group: promoGroup || null,
+        promo_variant: promoVariant || null,
+        source_page: sourcePage || null,
       })
       .select()
       .single();
@@ -143,6 +146,9 @@ serve(async (req) => {
         order_token: order.order_token,
         package_id: packageId,
         upsell_ids: validUpsells.join(","),
+        promo_group: promoGroup || "",
+        promo_variant: promoVariant || "",
+        source_page: sourcePage || "",
       },
     });
 

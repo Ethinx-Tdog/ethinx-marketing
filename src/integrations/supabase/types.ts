@@ -27,7 +27,11 @@ export type Database = {
           paid_at: string | null
           photo_count: number | null
           photo_files: string[]
+          promo_code: string | null
+          promo_group: string | null
+          promo_variant: string | null
           result_files: string[] | null
+          source_page: string | null
           status: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent_id: string | null
           stripe_session_id: string | null
@@ -46,7 +50,11 @@ export type Database = {
           paid_at?: string | null
           photo_count?: number | null
           photo_files?: string[]
+          promo_code?: string | null
+          promo_group?: string | null
+          promo_variant?: string | null
           result_files?: string[] | null
+          source_page?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
@@ -65,7 +73,11 @@ export type Database = {
           paid_at?: string | null
           photo_count?: number | null
           photo_files?: string[]
+          promo_code?: string | null
+          promo_group?: string | null
+          promo_variant?: string | null
           result_files?: string[] | null
+          source_page?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
