@@ -114,6 +114,26 @@ serve(async (req) => {
           }
 
           logStep("Order updated to paid", { orderId: session.metadata.order_id });
+
+          // Log coupon_used event to promo_events if a coupon was applied
+          if (couponCode) {
+            const { error: promoError } = await supabase
+              .from("promo_events")
+              .insert({
+                event_type: "coupon_used",
+                promo_code: couponCode,
+                variant: session.metadata.promo_variant || "default",
+                page_path: session.metadata.source_page || "/checkout",
+                order_id: session.metadata.order_id,
+                ab_group: session.metadata.promo_group || null,
+              });
+
+            if (promoError) {
+              logStep("Failed to log coupon_used event", promoError);
+            } else {
+              logStep("Logged coupon_used event", { couponCode, orderId: session.metadata.order_id });
+            }
+          }
         }
         break;
       }
