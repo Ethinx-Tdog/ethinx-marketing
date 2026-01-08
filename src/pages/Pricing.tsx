@@ -172,16 +172,21 @@ export default function Pricing() {
                   ))}
                 </ul>
 
-                <Button
-                  onClick={() => selectPackage(plan.id)}
-                  className={`w-full font-semibold ${
-                    plan.popular
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-gold"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
-                >
-                  Choose {plan.name}
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => selectPackage(plan.id)}
+                    className={`w-full font-semibold ${
+                      plan.popular
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-gold"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    }`}
+                  >
+                    Choose {plan.name}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Limited-time codes apply at checkout
+                  </p>
+                </div>
               </div>
             ))}
           </div>
