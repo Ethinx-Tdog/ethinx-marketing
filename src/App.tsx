@@ -22,6 +22,7 @@ import OrderStatus from "@/pages/OrderStatus";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminOrderDetail from "@/pages/admin/AdminOrderDetail";
+import AdminPromoAnalytics from "@/pages/admin/AdminPromoAnalytics";
 
 // Industry pages
 import RealEstateHeadshots from "@/pages/industries/RealEstateHeadshots";
@@ -67,7 +68,7 @@ export default function App() {
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/orders" element={<RequireAdmin><AdminOrders /></RequireAdmin>} />
             <Route path="/admin/orders/:orderId" element={<RequireAdmin><AdminOrderDetail /></RequireAdmin>} />
-            
+            <Route path="/admin/promo-analytics" element={<RequireAdmin><AdminPromoAnalytics /></RequireAdmin>} />
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
