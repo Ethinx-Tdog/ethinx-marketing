@@ -2,7 +2,17 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Clock, X } from "lucide-react";
 
-export default function PromoBanner() {
+interface PromoBannerProps {
+  code?: string;
+  discount?: string;
+  expiryDays?: number;
+}
+
+export default function PromoBanner({ 
+  code = "WELCOME10", 
+  discount = "10% off",
+  expiryDays = 7 
+}: PromoBannerProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -24,10 +34,10 @@ export default function PromoBanner() {
     }
   }, [searchParams, setSearchParams]);
 
-  // Countdown timer - ends 7 days from now
+  // Countdown timer
   useEffect(() => {
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 7);
+    endDate.setDate(endDate.getDate() + expiryDays);
 
     const timer = setInterval(() => {
       const now = new Date().getTime();
@@ -44,7 +54,7 @@ export default function PromoBanner() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [expiryDays]);
 
   const dismissBanner = () => {
     setBannerDismissed(true);
@@ -57,7 +67,7 @@ export default function PromoBanner() {
     <div className="bg-gradient-gold text-primary-foreground py-2.5 px-4 relative">
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 pr-8">
         <p className="text-sm font-medium">
-          🎉 Use code <span className="font-bold">WELCOME10</span> for 10% off!
+          🎉 Use code <span className="font-bold">{code}</span> for {discount}!
         </p>
         <div className="flex items-center gap-1.5 text-xs font-semibold">
           <Clock className="h-3.5 w-3.5" />
