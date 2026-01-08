@@ -1,14 +1,10 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { serve } from "../_shared/deps.ts";
+import { sbAdmin } from "../_shared/sb.ts";
+import { env } from "../_shared/env.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const logStep = (step: string, details?: unknown) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
-  console.log(`[FINALIZE-ORDER] ${step}${detailsStr}`);
 };
 
 interface ModalCallback {
@@ -27,14 +23,9 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
-
     // Verify webhook secret
-    const webhookSecret = Deno.env.get("MODAL_WEBHOOK_SECRET");
     const providedSecret = req.headers.get("X-Webhook-Secret");
-    
-    if (webhookSecret && providedSecret !== webhookSecret) {
-      logStep("Invalid webhook secret");
+    if (providedSecret !== env.MODAL_WEBHOOK_SECRET) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
@@ -42,120 +33,81 @@ serve(async (req) => {
     }
 
     const body: ModalCallback = await req.json();
-    logStep("Received callback", { 
-      queue_id: body.queue_id, 
-      order_id: body.order_id,
-      success: body.success,
-      result_count: body.result_files?.length || 0
-    });
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const now = new Date().toISOString();
 
     if (!body.success) {
       // Mark queue item as failed
-      await supabase
+      await sbAdmin
         .from("order_queue")
-        .update({ 
+        .update({
           status: "failed",
           last_error: body.error || "Processing failed",
-          updated_at: new Date().toISOString()
+          updated_at: now,
         })
         .eq("id", body.queue_id);
 
       // Update order status to failed
-      await supabase
+      await sbAdmin
         .from("orders")
         .update({ status: "failed" })
         .eq("id", body.order_id);
 
-      logStep("Marked order as failed", { error: body.error });
-
       // Dispatch failure email
-      try {
-        await fetch(`${supabaseUrl}/functions/v1/email-dispatch`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabaseServiceKey}`
-          },
-          body: JSON.stringify({
-            type: "processing_failed",
-            order_id: body.order_id,
-            order_token: body.order_token,
-          }),
-        });
-      } catch (emailError) {
-        logStep("Failed to send failure email", { error: emailError });
-      }
+      await fetch(`${env.SUPABASE_URL}/functions/v1/email-dispatch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          type: "processing_failed",
+          order_id: body.order_id,
+          order_token: body.order_token,
+        }),
+      });
 
       return new Response(
         JSON.stringify({ success: false, message: "Order marked as failed" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Success path - update order with results
-    const now = new Date().toISOString();
-
-    // Update queue item
-    await supabase
+    // Success path - update queue and order
+    await sbAdmin
       .from("order_queue")
-      .update({ 
-        status: "completed",
-        processed_at: now,
-        updated_at: now
-      })
+      .update({ status: "completed", processed_at: now, updated_at: now })
       .eq("id", body.queue_id);
 
-    // Update order with result files and mark completed
-    await supabase
+    await sbAdmin
       .from("orders")
-      .update({ 
+      .update({
         status: "completed",
         result_files: body.result_files,
-        completed_at: now
+        completed_at: now,
       })
       .eq("id", body.order_id);
 
-    logStep("Order completed", { 
-      order_id: body.order_id, 
-      result_count: body.result_files.length 
+    // Dispatch success email
+    await fetch(`${env.SUPABASE_URL}/functions/v1/email-dispatch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        type: "images_ready",
+        order_id: body.order_id,
+        order_token: body.order_token,
+        zip_path: body.zip_path,
+      }),
     });
 
-    // Dispatch success email with download link
-    try {
-      await fetch(`${supabaseUrl}/functions/v1/email-dispatch`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabaseServiceKey}`
-        },
-        body: JSON.stringify({
-          type: "images_ready",
-          order_id: body.order_id,
-          order_token: body.order_token,
-          zip_path: body.zip_path,
-        }),
-      });
-      logStep("Success email dispatched");
-    } catch (emailError) {
-      logStep("Failed to send success email", { error: emailError });
-    }
-
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Order finalized",
-        order_id: body.order_id
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      JSON.stringify({ success: true, message: "Order finalized", order_id: body.order_id }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    logStep("ERROR", { message });
     return new Response(
       JSON.stringify({ error: message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
