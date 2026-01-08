@@ -4,18 +4,38 @@ import { Clock, X, Zap } from "lucide-react";
 import { trackImpression, trackDismissed, trackCtaClicked, trackAbAssigned } from "@/lib/promo-analytics";
 import { getPromoGroup, resetPromoGroup, type PromoGroup } from "@/lib/promo-ab";
 
+// Known promo codes configuration
+export const KNOWN_PROMOS: Record<string, { discount: string; expiryDays: number; variant?: "default" | "flash" }> = {
+  WELCOME10: { discount: "10% off", expiryDays: 3, variant: "default" },
+  FLASH20: { discount: "20% off", expiryDays: 1, variant: "flash" },
+  SAVE15: { discount: "15% off", expiryDays: 5, variant: "default" },
+};
+
 interface PromoBannerProps {
   code?: string;
   discount?: string;
   expiryDays?: number;
+  forceVariant?: "default" | "flash";
 }
 
 export default function PromoBanner({ 
-  code = "WELCOME10", 
-  discount = "10% off",
-  expiryDays = 7,
+  code: propCode,
+  discount: propDiscount,
+  expiryDays: propExpiryDays,
+  forceVariant,
 }: PromoBannerProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  
+  // Check URL param for code
+  const urlCode = searchParams.get("code")?.toUpperCase();
+  const matchedPromo = urlCode && KNOWN_PROMOS[urlCode] ? KNOWN_PROMOS[urlCode] : null;
+  
+  // Determine final values - URL param takes precedence
+  const code = matchedPromo ? urlCode! : (propCode || "WELCOME10");
+  const discount = matchedPromo?.discount || propDiscount || "10% off";
+  const expiryDays = matchedPromo?.expiryDays ?? propExpiryDays ?? 7;
+  const urlForceVariant = matchedPromo?.variant || forceVariant;
+  const [, setSearchParams] = useSearchParams();
   const impressionTracked = useRef(false);
   const abAssignmentTracked = useRef(false);
 
@@ -91,7 +111,8 @@ export default function PromoBanner({
     return () => clearInterval(timer);
   }, [expiryDays]);
 
-  const variant = abGroup === "banner_flash" ? "flash" : "default";
+  // URL-forced variant takes precedence over A/B group
+  const variant = urlForceVariant || (abGroup === "banner_flash" ? "flash" : "default");
 
   const dismissBanner = () => {
     trackDismissed(code, variant, abGroup);
@@ -104,10 +125,11 @@ export default function PromoBanner({
     navigator.clipboard.writeText(code).catch(() => {});
   };
 
-  // Don't render if: control group, dismissed, or not yet assigned
-  if (!abGroup || abGroup === "control" || bannerDismissed) return null;
+  // Don't render if: control group (unless URL code), dismissed, or not yet assigned
+  // URL code bypasses control group
+  if (!abGroup || (abGroup === "control" && !matchedPromo) || bannerDismissed) return null;
 
-  const isFlash = abGroup === "banner_flash";
+  const isFlash = variant === "flash";
 
   return (
     <div 
