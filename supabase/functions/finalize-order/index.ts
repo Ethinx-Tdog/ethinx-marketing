@@ -1,3 +1,34 @@
+/**
+ * finalize-order Edge Function
+ *
+ * Callback endpoint for Modal to signal job completion.
+ * Verifies HMAC signature and updates order status.
+ *
+ * MODAL CALLBACK CONTRACT:
+ * -------------------------
+ * POST https://<supabase-url>/functions/v1/finalize-order
+ *
+ * Headers:
+ *   x-ethinx-signature: <hex-encoded HMAC-SHA256 of body>
+ *
+ * Request Payload:
+ * {
+ *   "order_id": "uuid",
+ *   "order_token": "uuid",
+ *   "email": "customer@example.com",
+ *   "results": ["result_000.jpg", "result_001.jpg", ...],
+ *   "zip_key": "orders/zips/<order_token>.zip"
+ * }
+ *
+ * HMAC Signature:
+ *   Sign the raw JSON body with MODAL_WEBHOOK_SECRET (hex-encoded)
+ *   Python example:
+ *     import hmac, hashlib
+ *     sig = hmac.new(bytes.fromhex(SECRET), body.encode(), hashlib.sha256).hexdigest()
+ *
+ * Response: { "ok": true }
+ */
+
 import { serve } from "../_shared/deps.ts";
 import { sbAdmin } from "../_shared/sb.ts";
 import { env } from "../_shared/env.ts";
