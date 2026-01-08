@@ -1,0 +1,11 @@
+export const env = {
+  SITE_URL: Deno.env.get("SITE_URL")!,
+  FROM_EMAIL: Deno.env.get("FROM_EMAIL")!,
+  SENDER_NAME: Deno.env.get("SENDER_NAME") ?? "ETHINX",
+  SUPABASE_URL: Deno.env.get("SUPABASE_URL")!,
+  SUPABASE_SERVICE_ROLE_KEY: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  STRIPE_SECRET_KEY: Deno.env.get("STRIPE_SECRET_KEY")!,
+  STRIPE_WEBHOOK_SECRET: Deno.env.get("STRIPE_WEBHOOK_SECRET")!,
+  RESEND_API_KEY: Deno.env.get("RESEND_API_KEY")!,
+  MODAL_WEBHOOK_SECRET: Deno.env.get("MODAL_WEBHOOK_SECRET")!,
+};
