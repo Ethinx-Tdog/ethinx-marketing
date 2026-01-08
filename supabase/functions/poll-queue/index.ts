@@ -1,3 +1,31 @@
+/**
+ * poll-queue Edge Function
+ *
+ * Polls the order_queue table for queued jobs and dispatches them to Modal.
+ * Should be invoked periodically via cron or external scheduler.
+ *
+ * MODAL ENDPOINT CONTRACT:
+ * -------------------------
+ * POST https://<your-modal-app>.modal.run/generate
+ *
+ * Request Payload (from order_queue.payload):
+ * {
+ *   "order_id": "uuid",
+ *   "order_token": "uuid",
+ *   "email": "customer@example.com",
+ *   "package_name": "starter" | "pro" | "ultimate",
+ *   "photo_count": 5,
+ *   "promo_code": "SAVE20" | null,
+ *   "upload_prefix": "uploads/raw/<order_token>/",
+ *   "result_prefix": "orders/results/<order_token>/",
+ *   "zip_path": "orders/zips/<order_token>.zip"
+ * }
+ *
+ * Expected Response: 200 OK (processing started)
+ *
+ * Modal should callback to finalize-order when complete.
+ */
+
 import { serve } from "../_shared/deps.ts";
 import { sbAdmin } from "../_shared/sb.ts";
 
