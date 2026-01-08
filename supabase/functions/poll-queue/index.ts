@@ -60,9 +60,6 @@ serve(async () => {
     .update({ status: "dispatching" })
     .eq("id", item.id);
 
-  // TODO: Remove after testing retry logic
-  throw new Error("Forced failure to test retry");
-
   const res = await fetch(MODAL_ENDPOINT, {
     method: "POST",
     headers: {
