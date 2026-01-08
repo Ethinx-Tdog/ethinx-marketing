@@ -97,7 +97,7 @@ export const styles: StyleBlock[] = [
     female: [
       {
         before: "/examples/health-female/before.jpg",
-        after: "/examples/health-female/after.png",
+        after: "/examples/health-female/after.jpg",
         alt: "Health female before and after",
       },
     ],
