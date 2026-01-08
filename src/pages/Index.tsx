@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Lock, BadgeCheck, ArrowRight, Star } from "lucide-react";
+import { Sparkles, Lock, BadgeCheck, ArrowRight, Star, Clock } from "lucide-react";
 import TrustStrip from "@/components/TrustStrip";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import HowItWorksSteps from "@/components/HowItWorksSteps";
@@ -19,13 +20,50 @@ export default function Index() {
   // Pick 3 sample transformations for homepage
   const sampleTransformations = featuredExamples.slice(0, 3);
 
+  // Countdown timer - ends 7 days from now (reset on page load for demo)
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    // Set end date to 7 days from now
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 7);
+
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = endDate.getTime() - now;
+
+      if (distance > 0) {
+        setTimeLeft({
+          days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((distance % (1000 * 60)) / 1000),
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <main>
       {/* Promo Banner */}
-      <div className="bg-gradient-gold text-primary-foreground text-center py-2.5 px-4">
-        <p className="text-sm font-medium">
-          🎉 Use code <span className="font-bold">WELCOME10</span> at checkout for 10% off your first order!
-        </p>
+      <div className="bg-gradient-gold text-primary-foreground py-2.5 px-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+          <p className="text-sm font-medium">
+            🎉 Use code <span className="font-bold">WELCOME10</span> for 10% off!
+          </p>
+          <div className="flex items-center gap-1.5 text-xs font-semibold">
+            <Clock className="h-3.5 w-3.5" />
+            <span>Ends in:</span>
+            <div className="flex gap-1">
+              <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{timeLeft.days}d</span>
+              <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.hours).padStart(2, '0')}h</span>
+              <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.minutes).padStart(2, '0')}m</span>
+              <span className="bg-primary-foreground/20 rounded px-1.5 py-0.5">{String(timeLeft.seconds).padStart(2, '0')}s</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Hero Section */}
