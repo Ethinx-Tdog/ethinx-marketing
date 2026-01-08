@@ -2,12 +2,6 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-// Admin emails - add authorized admin emails here
-const ADMIN_EMAILS = [
-  "admin@ethinx.solutions",
-  // Add more admin emails as needed
-];
-
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
@@ -24,8 +18,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const isAdmin = user?.email ? ADMIN_EMAILS.includes(user.email.toLowerCase()) : false;
+  // Check admin role from database
+  const checkAdminRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+        return;
+      }
+      
+      setIsAdmin(!!data);
+    } catch (err) {
+      console.error('Error checking admin role:', err);
+      setIsAdmin(false);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -34,6 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+        
+        if (session?.user) {
+          // Defer admin check to avoid Supabase client deadlock
+          setTimeout(() => checkAdminRole(session.user.id), 0);
+        } else {
+          setIsAdmin(false);
+        }
       }
     );
 
@@ -42,6 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+      
+      if (session?.user) {
+        checkAdminRole(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
