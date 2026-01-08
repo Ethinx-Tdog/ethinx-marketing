@@ -2,8 +2,12 @@ export type PromoGroup = "control" | "banner_default" | "banner_flash";
 
 const STORAGE_KEY = "promo_ab_group";
 
-// Weighted distribution: 33% each
+// Valid groups for validation
 const GROUPS: PromoGroup[] = ["control", "banner_default", "banner_flash"];
+
+// Weighted distribution: 70% flash, 30% control (effective until 2025-01-11)
+// After 72h, revert to equal distribution
+const FLASH_BIAS_END = new Date("2025-01-11T00:00:00Z");
 
 /**
  * Get or assign a user to an A/B test group.
@@ -16,9 +20,17 @@ export const getPromoGroup = (): PromoGroup => {
     return stored as PromoGroup;
   }
 
-  // Random assignment
-  const randomIndex = Math.floor(Math.random() * GROUPS.length);
-  const assigned = GROUPS[randomIndex];
+  let assigned: PromoGroup;
+  
+  // Check if we're still in the flash bias period
+  if (new Date() < FLASH_BIAS_END) {
+    // 70% flash, 30% control
+    assigned = Math.random() < 0.7 ? "banner_flash" : "control";
+  } else {
+    // After bias period: equal 33% distribution
+    const randomIndex = Math.floor(Math.random() * GROUPS.length);
+    assigned = GROUPS[randomIndex];
+  }
   
   localStorage.setItem(STORAGE_KEY, assigned);
   return assigned;
