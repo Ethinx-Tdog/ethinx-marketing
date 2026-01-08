@@ -1,27 +1,27 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Clock, X, Zap } from "lucide-react";
-import { trackImpression, trackDismissed, trackCtaClicked } from "@/lib/promo-analytics";
+import { trackImpression, trackDismissed, trackCtaClicked, trackAbAssigned } from "@/lib/promo-analytics";
+import { getPromoGroup, resetPromoGroup, type PromoGroup } from "@/lib/promo-ab";
 
 interface PromoBannerProps {
   code?: string;
   discount?: string;
   expiryDays?: number;
-  variant?: "default" | "flash";
 }
 
 export default function PromoBanner({ 
   code = "WELCOME10", 
   discount = "10% off",
   expiryDays = 7,
-  variant = "default"
 }: PromoBannerProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const impressionTracked = useRef(false);
+  const abAssignmentTracked = useRef(false);
 
+  const [abGroup, setAbGroup] = useState<PromoGroup | null>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [bannerDismissed, setBannerDismissed] = useState(() => {
-    // Check if reset param is present
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("resetBanner") === "true") {
       localStorage.removeItem("promoBannerDismissed");
@@ -30,13 +30,36 @@ export default function PromoBanner({
     return localStorage.getItem("promoBannerDismissed") === "true";
   });
 
-  // Track impression once when banner is shown
+  // Handle A/B group assignment and URL param resets
   useEffect(() => {
-    if (!bannerDismissed && !impressionTracked.current) {
-      impressionTracked.current = true;
-      trackImpression(code, variant);
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Reset A/B group if requested
+    if (urlParams.get("resetPromoAB") === "true") {
+      resetPromoGroup();
+      urlParams.delete("resetPromoAB");
+      window.history.replaceState({}, "", `${window.location.pathname}${urlParams.toString() ? `?${urlParams}` : ""}`);
     }
-  }, [bannerDismissed, code, variant]);
+
+    // Get or assign A/B group
+    const group = getPromoGroup();
+    setAbGroup(group);
+
+    // Track A/B assignment once per session
+    if (!abAssignmentTracked.current) {
+      abAssignmentTracked.current = true;
+      trackAbAssigned(group);
+    }
+  }, []);
+
+  // Track impression once when banner is shown (not control group)
+  useEffect(() => {
+    if (abGroup && abGroup !== "control" && !bannerDismissed && !impressionTracked.current) {
+      impressionTracked.current = true;
+      const variant = abGroup === "banner_flash" ? "flash" : "default";
+      trackImpression(code, variant, abGroup);
+    }
+  }, [abGroup, bannerDismissed, code]);
 
   // Clean up URL param after reset
   useEffect(() => {
@@ -68,21 +91,23 @@ export default function PromoBanner({
     return () => clearInterval(timer);
   }, [expiryDays]);
 
+  const variant = abGroup === "banner_flash" ? "flash" : "default";
+
   const dismissBanner = () => {
-    trackDismissed(code, variant);
+    trackDismissed(code, variant, abGroup);
     setBannerDismissed(true);
     localStorage.setItem("promoBannerDismissed", "true");
   };
 
   const handleCodeClick = () => {
-    trackCtaClicked(code, variant);
-    // Copy code to clipboard
+    trackCtaClicked(code, variant, abGroup);
     navigator.clipboard.writeText(code).catch(() => {});
   };
 
-  if (bannerDismissed) return null;
+  // Don't render if: control group, dismissed, or not yet assigned
+  if (!abGroup || abGroup === "control" || bannerDismissed) return null;
 
-  const isFlash = variant === "flash";
+  const isFlash = abGroup === "banner_flash";
 
   return (
     <div 
