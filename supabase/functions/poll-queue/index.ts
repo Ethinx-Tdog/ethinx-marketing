@@ -10,7 +10,7 @@ serve(async () => {
     .eq("status", "queued")
     .order("created_at", { ascending: true })
     .limit(1)
-    .maybeSingle();
+    .single();
 
   if (!item) {
     return new Response(JSON.stringify({ idle: true }), {
