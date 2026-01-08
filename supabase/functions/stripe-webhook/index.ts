@@ -57,6 +57,40 @@ serve(async (req) => {
         });
 
         if (session.payment_status === "paid" && session.metadata?.order_id) {
+          // Check for applied discount/coupon
+          let couponCode: string | null = null;
+          let discountAmount = 0;
+
+          if (session.total_details?.amount_discount) {
+            discountAmount = session.total_details.amount_discount;
+          }
+
+          // Retrieve full session to get discount details
+          if (discountAmount > 0) {
+            try {
+              const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+                expand: ["discounts.promotion_code.coupon"],
+              });
+              
+              if (fullSession.discounts && fullSession.discounts.length > 0) {
+                const discount = fullSession.discounts[0];
+                if (discount.promotion_code && typeof discount.promotion_code === "object") {
+                  couponCode = discount.promotion_code.code;
+                } else if (discount.coupon && typeof discount.coupon === "object") {
+                  couponCode = discount.coupon.name || discount.coupon.id;
+                }
+              }
+
+              logStep("Coupon applied", {
+                coupon_code: couponCode,
+                order_id: session.metadata.order_id,
+                discount_amount: discountAmount,
+              });
+            } catch (err) {
+              logStep("Failed to retrieve discount details", { error: String(err) });
+            }
+          }
+
           const { error } = await supabase
             .from("orders")
             .update({
