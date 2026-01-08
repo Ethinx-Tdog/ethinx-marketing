@@ -135,7 +135,7 @@ export default function PromoBanner({
     <div 
       className={`py-2.5 px-4 relative ${
         isFlash 
-          ? "bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white animate-pulse" 
+          ? "bg-black text-gold border-b border-gold/30" 
           : "bg-gradient-gold text-primary-foreground"
       }`}
     >
@@ -163,16 +163,16 @@ export default function PromoBanner({
           <Clock className="h-3.5 w-3.5" />
           <span>Ends in:</span>
           <div className="flex gap-1">
-            <span className={`rounded px-1.5 py-0.5 ${isFlash ? "bg-white/20" : "bg-primary-foreground/20"}`}>
+            <span className={`rounded px-1.5 py-0.5 ${isFlash ? "bg-gold/20" : "bg-primary-foreground/20"}`}>
               {timeLeft.days}d
             </span>
-            <span className={`rounded px-1.5 py-0.5 ${isFlash ? "bg-white/20" : "bg-primary-foreground/20"}`}>
+            <span className={`rounded px-1.5 py-0.5 ${isFlash ? "bg-gold/20" : "bg-primary-foreground/20"}`}>
               {String(timeLeft.hours).padStart(2, '0')}h
             </span>
-            <span className={`rounded px-1.5 py-0.5 ${isFlash ? "bg-white/20" : "bg-primary-foreground/20"}`}>
+            <span className={`rounded px-1.5 py-0.5 ${isFlash ? "bg-gold/20" : "bg-primary-foreground/20"}`}>
               {String(timeLeft.minutes).padStart(2, '0')}m
             </span>
-            <span className={`rounded px-1.5 py-0.5 ${isFlash ? "bg-white/20" : "bg-primary-foreground/20"}`}>
+            <span className={`rounded px-1.5 py-0.5 ${isFlash ? "bg-gold/20" : "bg-primary-foreground/20"}`}>
               {String(timeLeft.seconds).padStart(2, '0')}s
             </span>
           </div>
@@ -181,7 +181,7 @@ export default function PromoBanner({
       <button
         onClick={dismissBanner}
         className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
-          isFlash ? "hover:bg-white/20" : "hover:bg-primary-foreground/20"
+          isFlash ? "hover:bg-gold/20 text-gold" : "hover:bg-primary-foreground/20"
         }`}
         aria-label="Dismiss banner"
       >
