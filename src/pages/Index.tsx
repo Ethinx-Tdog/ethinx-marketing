@@ -21,6 +21,13 @@ export default function Index() {
 
   return (
     <main>
+      {/* Promo Banner */}
+      <div className="bg-gradient-gold text-primary-foreground text-center py-2.5 px-4">
+        <p className="text-sm font-medium">
+          🎉 Use code <span className="font-bold">WELCOME10</span> at checkout for 10% off your first order!
+        </p>
+      </div>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-radial">
         <div className="mx-auto max-w-7xl px-4 py-20 md:py-28 text-center">
