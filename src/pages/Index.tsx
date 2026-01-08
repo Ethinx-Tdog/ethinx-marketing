@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Sparkles, Lock, BadgeCheck, ArrowRight, Star, Clock, X } from "lucide-react";
 import TrustStrip from "@/components/TrustStrip";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
@@ -20,11 +20,28 @@ export default function Index() {
   // Pick 3 sample transformations for homepage
   const sampleTransformations = featuredExamples.slice(0, 3);
 
+  // Check for reset banner URL param
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // Countdown timer - ends 7 days from now (reset on page load for demo)
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [bannerDismissed, setBannerDismissed] = useState(() => {
+    // Check if reset param is present
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("resetBanner") === "true") {
+      localStorage.removeItem("promoBannerDismissed");
+      return false;
+    }
     return localStorage.getItem("promoBannerDismissed") === "true";
   });
+
+  // Clean up URL param after reset
+  useEffect(() => {
+    if (searchParams.get("resetBanner") === "true") {
+      searchParams.delete("resetBanner");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     // Set end date to 7 days from now
