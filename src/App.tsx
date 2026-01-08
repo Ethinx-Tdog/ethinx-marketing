@@ -15,6 +15,7 @@ import Contact from "@/pages/Contact";
 import NotFound from "@/pages/NotFound";
 import CheckoutSuccess from "@/pages/checkout/CheckoutSuccess";
 import CheckoutCancel from "@/pages/checkout/CheckoutCancel";
+import OrderStatus from "@/pages/OrderStatus";
 
 // Industry pages
 import RealEstateHeadshots from "@/pages/industries/RealEstateHeadshots";
@@ -52,6 +53,7 @@ export default function App() {
           {/* Checkout pages */}
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/checkout/cancel" element={<CheckoutCancel />} />
+          <Route path="/order-status" element={<OrderStatus />} />
           
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
