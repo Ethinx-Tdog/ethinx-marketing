@@ -16,9 +16,12 @@ import {
   TrendingUp,
   ShoppingCart,
   CalendarIcon,
-  X
+  X,
+  Download
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -44,7 +47,6 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { SEO } from "@/components/SEO";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface Order {
@@ -154,6 +156,58 @@ export default function AdminOrders() {
     failed: orders.filter((o) => o.status === "failed").length,
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      if (!token) {
+        toast.error("Please sign in to export");
+        return;
+      }
+
+      const params = new URLSearchParams();
+      if (dateFrom) params.set("from", dateFrom.toISOString());
+      if (dateTo) params.set("to", dateTo.toISOString());
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (searchQuery) params.set("q", searchQuery);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-orders?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Export failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orders-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Orders exported successfully");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Export failed";
+      toast.error(message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-AU", {
       day: "numeric",
@@ -205,6 +259,10 @@ export default function AdminOrders() {
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {user?.email}
             </span>
+            <Button onClick={exportCSV} variant="outline" size="sm" disabled={isExporting}>
+              <Download className={cn("mr-2 h-4 w-4", isExporting && "animate-pulse")} />
+              Export CSV
+            </Button>
             <Button onClick={fetchOrders} variant="outline" size="sm">
               <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
               Refresh
