@@ -135,6 +135,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : email,
       line_items: lineItems,
       mode: "payment",
+      allow_promotion_codes: true,
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order=${order.order_token}`,
       cancel_url: `${origin}/checkout/cancel?order=${order.order_token}`,
       metadata: {
