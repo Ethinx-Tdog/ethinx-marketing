@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
-import { 
+import { format, startOfDay, endOfDay, subDays, startOfMonth, startOfWeek } from "date-fns";
+import {
   Search, 
   Filter, 
   Package, 
@@ -131,6 +131,37 @@ export default function AdminOrders() {
   const clearDateFilters = () => {
     setDateFrom(undefined);
     setDateTo(undefined);
+  };
+
+  const applyDatePreset = (preset: string) => {
+    const today = new Date();
+    switch (preset) {
+      case "today":
+        setDateFrom(startOfDay(today));
+        setDateTo(endOfDay(today));
+        break;
+      case "yesterday":
+        const yesterday = subDays(today, 1);
+        setDateFrom(startOfDay(yesterday));
+        setDateTo(endOfDay(yesterday));
+        break;
+      case "last7":
+        setDateFrom(startOfDay(subDays(today, 6)));
+        setDateTo(endOfDay(today));
+        break;
+      case "last30":
+        setDateFrom(startOfDay(subDays(today, 29)));
+        setDateTo(endOfDay(today));
+        break;
+      case "thisWeek":
+        setDateFrom(startOfWeek(today, { weekStartsOn: 1 }));
+        setDateTo(endOfDay(today));
+        break;
+      case "thisMonth":
+        setDateFrom(startOfMonth(today));
+        setDateTo(endOfDay(today));
+        break;
+    }
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -361,8 +392,16 @@ export default function AdminOrders() {
             />
           </div>
           
-          {/* Date Range */}
-          <div className="flex items-center gap-2">
+          {/* Date Presets & Range */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex gap-1">
+              <Button variant="outline" size="sm" onClick={() => applyDatePreset("today")}>Today</Button>
+              <Button variant="outline" size="sm" onClick={() => applyDatePreset("yesterday")}>Yesterday</Button>
+              <Button variant="outline" size="sm" onClick={() => applyDatePreset("last7")}>Last 7 days</Button>
+              <Button variant="outline" size="sm" onClick={() => applyDatePreset("last30")}>Last 30 days</Button>
+              <Button variant="outline" size="sm" onClick={() => applyDatePreset("thisMonth")}>This month</Button>
+            </div>
+            
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-[140px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
