@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Clock, X, Zap } from "lucide-react";
+import { trackImpression, trackDismissed, trackCtaClicked } from "@/lib/promo-analytics";
 
 interface PromoBannerProps {
   code?: string;
@@ -16,6 +17,7 @@ export default function PromoBanner({
   variant = "default"
 }: PromoBannerProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const impressionTracked = useRef(false);
 
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [bannerDismissed, setBannerDismissed] = useState(() => {
@@ -27,6 +29,14 @@ export default function PromoBanner({
     }
     return localStorage.getItem("promoBannerDismissed") === "true";
   });
+
+  // Track impression once when banner is shown
+  useEffect(() => {
+    if (!bannerDismissed && !impressionTracked.current) {
+      impressionTracked.current = true;
+      trackImpression(code, variant);
+    }
+  }, [bannerDismissed, code, variant]);
 
   // Clean up URL param after reset
   useEffect(() => {
@@ -59,8 +69,15 @@ export default function PromoBanner({
   }, [expiryDays]);
 
   const dismissBanner = () => {
+    trackDismissed(code, variant);
     setBannerDismissed(true);
     localStorage.setItem("promoBannerDismissed", "true");
+  };
+
+  const handleCodeClick = () => {
+    trackCtaClicked(code, variant);
+    // Copy code to clipboard
+    navigator.clipboard.writeText(code).catch(() => {});
   };
 
   if (bannerDismissed) return null;
@@ -85,7 +102,15 @@ export default function PromoBanner({
           ) : (
             "🎉"
           )}{" "}
-          Use code <span className="font-bold">{code}</span> for {discount}!
+          Use code{" "}
+          <button
+            onClick={handleCodeClick}
+            className="font-bold underline underline-offset-2 hover:no-underline cursor-pointer"
+            title="Click to copy"
+          >
+            {code}
+          </button>{" "}
+          for {discount}!
         </p>
         <div className="flex items-center gap-1.5 text-xs font-semibold">
           <Clock className="h-3.5 w-3.5" />
