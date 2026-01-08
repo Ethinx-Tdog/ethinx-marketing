@@ -6,6 +6,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Safe error message mapping to prevent information leakage
+function getSafeErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    
+    if (msg.includes('not found') || msg.includes('does not exist')) {
+      return 'The requested file could not be found';
+    }
+    if (msg.includes('bucket') || msg.includes('storage')) {
+      return 'Storage operation failed';
+    }
+    if (msg.includes('auth') || msg.includes('unauthorized') || msg.includes('permission')) {
+      return 'Operation not permitted';
+    }
+    if (msg.includes('expired') || msg.includes('invalid')) {
+      return 'Invalid request';
+    }
+  }
+  
+  return 'An error occurred processing your request';
+}
+
+// Validate fileName format to prevent path traversal
+function isValidFileName(fileName: string): boolean {
+  // Must not be empty
+  if (!fileName || fileName.trim() === '') return false;
+  
+  // Must not contain path traversal characters
+  if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) return false;
+  
+  // Must match expected format: timestamp-uuid.extension
+  const validPattern = /^\d+-[a-f0-9-]+\.[a-z0-9]+$/i;
+  return validPattern.test(fileName);
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -17,15 +52,25 @@ serve(async (req) => {
     
     if (!bucket || !fileName) {
       return new Response(
-        JSON.stringify({ error: 'bucket and fileName are required' }),
+        JSON.stringify({ error: 'Bucket and file name are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validate bucket name
+    // Validate bucket name against whitelist
     if (!['uploads', 'processed'].includes(bucket)) {
+      console.log(`Invalid bucket requested: ${bucket}`);
       return new Response(
-        JSON.stringify({ error: 'Invalid bucket name' }),
+        JSON.stringify({ error: 'Invalid storage location specified' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate fileName format to prevent path traversal
+    if (!isValidFileName(fileName)) {
+      console.log(`Invalid fileName format: ${fileName}`);
+      return new Response(
+        JSON.stringify({ error: 'Invalid file reference format' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -45,7 +90,7 @@ serve(async (req) => {
     if (error) {
       console.error('Signed URL error:', error);
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: getSafeErrorMessage(error) }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -62,9 +107,8 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error in get-signed-url:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: getSafeErrorMessage(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
