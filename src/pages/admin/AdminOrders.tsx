@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
 import { 
   Search, 
   Filter, 
@@ -13,7 +14,9 @@ import {
   LogOut,
   DollarSign,
   TrendingUp,
-  ShoppingCart
+  ShoppingCart,
+  CalendarIcon,
+  X
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -33,6 +36,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { SEO } from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,6 +85,8 @@ export default function AdminOrders() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
   const fetchOrders = async () => {
     setIsLoading(true);
@@ -87,6 +98,17 @@ export default function AdminOrders() {
 
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter as "pending" | "paid" | "processing" | "completed" | "failed" | "refunded");
+      }
+
+      if (dateFrom) {
+        query = query.gte("created_at", dateFrom.toISOString());
+      }
+
+      if (dateTo) {
+        // Add 1 day to include the entire end date
+        const endDate = new Date(dateTo);
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.lt("created_at", endDate.toISOString());
       }
 
       const { data, error } = await query;
@@ -102,7 +124,12 @@ export default function AdminOrders() {
 
   useEffect(() => {
     fetchOrders();
-  }, [statusFilter]);
+  }, [statusFilter, dateFrom, dateTo]);
+
+  const clearDateFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
 
   const filteredOrders = orders.filter((order) => {
     if (!searchQuery) return true;
@@ -265,7 +292,7 @@ export default function AdminOrders() {
         </div>
 
         {/* Filters */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -275,6 +302,54 @@ export default function AdminOrders() {
               className="pl-10"
             />
           </div>
+          
+          {/* Date Range */}
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[140px] justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, "dd MMM") : "From"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateFrom}
+                  onSelect={setDateFrom}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <span className="text-muted-foreground">–</span>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[140px] justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, "dd MMM") : "To"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateTo}
+                  onSelect={setDateTo}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" onClick={clearDateFilters}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-48">
               <Filter className="mr-2 h-4 w-4" />
