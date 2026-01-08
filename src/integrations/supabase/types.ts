@@ -74,6 +74,47 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          order_id: string | null
+          page_path: string
+          promo_code: string
+          session_id: string | null
+          variant: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          order_id?: string | null
+          page_path: string
+          promo_code: string
+          session_id?: string | null
+          variant?: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          order_id?: string | null
+          page_path?: string
+          promo_code?: string
+          session_id?: string | null
+          variant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
