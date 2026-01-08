@@ -9,8 +9,10 @@ import {
   XCircle, 
   RefreshCw,
   ArrowLeft,
-  Eye
+  Eye,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -136,6 +138,8 @@ export default function AdminOrders() {
     );
   };
 
+  const { signOut, user } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       <SEO title="Admin - Orders" description="Manage orders" />
@@ -154,10 +158,18 @@ export default function AdminOrders() {
               </p>
             </div>
           </div>
-          <Button onClick={fetchOrders} variant="outline" size="sm">
-            <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              {user?.email}
+            </span>
+            <Button onClick={fetchOrders} variant="outline" size="sm">
+              <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
+              Refresh
+            </Button>
+            <Button onClick={signOut} variant="ghost" size="sm">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
