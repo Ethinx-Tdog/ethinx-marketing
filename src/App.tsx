@@ -16,6 +16,8 @@ import NotFound from "@/pages/NotFound";
 import CheckoutSuccess from "@/pages/checkout/CheckoutSuccess";
 import CheckoutCancel from "@/pages/checkout/CheckoutCancel";
 import OrderStatus from "@/pages/OrderStatus";
+import AdminOrders from "@/pages/admin/AdminOrders";
+import AdminOrderDetail from "@/pages/admin/AdminOrderDetail";
 
 // Industry pages
 import RealEstateHeadshots from "@/pages/industries/RealEstateHeadshots";
@@ -54,6 +56,10 @@ export default function App() {
           <Route path="/checkout/success" element={<CheckoutSuccess />} />
           <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           <Route path="/order-status" element={<OrderStatus />} />
+          
+          {/* Admin pages */}
+          <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/orders/:orderId" element={<AdminOrderDetail />} />
           
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
