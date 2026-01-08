@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { OrderUploadButton } from "@/components/OrderUploadButton";
+import { OrderUploadInput } from "@/components/OrderUploadInput";
 import { ResultsGallery } from "@/components/ResultsGallery";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
@@ -48,7 +48,7 @@ export default function OrderStatus() {
       {order && (
         <div className="space-y-8">
           {canUpload ? (
-            <OrderUploadButton orderToken={token!} />
+            <OrderUploadInput orderToken={token!} />
           ) : (
             <p className="text-muted-foreground">Awaiting payment…</p>
           )}
