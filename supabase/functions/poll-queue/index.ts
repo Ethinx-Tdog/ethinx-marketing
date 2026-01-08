@@ -69,20 +69,42 @@ serve(async () => {
     body: JSON.stringify(item.payload),
   });
 
+  // Handle retryable errors (5xx, 429)
+  if (res.status >= 500 || res.status === 429) {
+    await sbAdmin
+      .from("order_queue")
+      .update({
+        status: "queued", // Keep as queued for retry
+        attempts: item.attempts + 1,
+        last_error: `Retrying due to status ${res.status}: ${await res.text()}`,
+      })
+      .eq("id", item.id);
+    return new Response(
+      JSON.stringify({ retry: true, reason: `Status ${res.status}`, delay: 60 }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // Handle non-retryable failures
   if (!res.ok) {
     await sbAdmin
       .from("order_queue")
-      .update({ status: "failed", last_error: await res.text() })
+      .update({ status: "failed", last_error: `Failed with status ${res.status}: ${await res.text()}` })
       .eq("id", item.id);
-    return new Response("error", { status: 500 });
+    return new Response(
+      JSON.stringify({ retry: false, reason: `Status ${res.status}` }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 
+  // Success - mark as processing
   await sbAdmin
     .from("order_queue")
     .update({ status: "processing" })
     .eq("id", item.id);
 
-  return new Response(JSON.stringify({ dispatched: item.id }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({ success: true, dispatched: item.id }),
+    { headers: { "Content-Type": "application/json" } }
+  );
 });
