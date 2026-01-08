@@ -3,6 +3,7 @@ import { Shield, CreditCard, BadgeCheck, Check, Award, Clock, Sparkles } from "l
 import { BRAND } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
+import PromoBanner from "@/components/PromoBanner";
 import { usePricing } from "@/contexts/PricingContext";
 import { IndustrySelector } from "@/components/IndustrySelector";
 import type { PackageId } from "@/lib/pricing-config";
@@ -83,6 +84,7 @@ export default function Pricing() {
         title="Pricing — ETHINX"
         description="Choose your AI headshot package. Starting from $49 AUD. T-DOG Certified quality with money-back guarantee."
       />
+      <PromoBanner />
       <main className="py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4">
           {/* Header */}
