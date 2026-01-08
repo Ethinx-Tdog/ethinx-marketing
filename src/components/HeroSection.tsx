@@ -2,7 +2,7 @@ import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrustStrip } from "@/components/TrustBadge";
 import { Link } from "react-router-dom";
-import { UploadButton } from "@/components/UploadButton";
+import { HeroUploadButton } from "@/components/HeroUploadButton";
 
 export function HeroSection() {
   return (
@@ -30,7 +30,7 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <UploadButton variant="gold" size="xl" className="group" />
+            <HeroUploadButton variant="gold" size="xl" className="group" />
             <Button variant="outline" size="xl" asChild>
               <Link to="/examples" className="group">
                 <Play className="h-5 w-5" />
