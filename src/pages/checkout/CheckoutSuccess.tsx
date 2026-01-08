@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { CheckCircle, Mail, ArrowRight } from "lucide-react";
+import { CheckCircle, Mail, ArrowRight, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 
@@ -41,12 +40,23 @@ export default function CheckoutSuccess() {
           </p>
         )}
 
-        <Button asChild variant="gold" className="mt-4">
-          <Link to="/">
-            Back to Home
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
-        </Button>
+        <div className="flex flex-col gap-3 pt-2">
+          {orderToken && (
+            <Button asChild variant="gold">
+              <Link to={`/order-status?token=${orderToken}`}>
+                <ClipboardList className="mr-2 h-4 w-4" />
+                View Order Status
+              </Link>
+            </Button>
+          )}
+          
+          <Button asChild variant="outline">
+            <Link to="/">
+              Back to Home
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
