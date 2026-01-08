@@ -15,6 +15,7 @@ interface FileValidation {
   error?: string;
   status: "pending" | "uploading" | "done" | "error";
   progress: number;
+  thumbnail?: string;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -22,13 +23,26 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "im
 
 function validateFiles(files: FileList | File[]): FileValidation[] {
   return Array.from(files).map((file) => {
+    const validation: FileValidation = { file, valid: true, status: "pending", progress: 0 };
+    
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return { file, valid: false, error: `Invalid type: ${file.type.split("/")[1] || "unknown"}`, status: "pending" as const, progress: 0 };
+      validation.valid = false;
+      validation.error = `Invalid type: ${file.type.split("/")[1] || "unknown"}`;
+    } else if (file.size > MAX_FILE_SIZE) {
+      validation.valid = false;
+      validation.error = `Too large: ${(file.size / 1024 / 1024).toFixed(1)}MB`;
     }
-    if (file.size > MAX_FILE_SIZE) {
-      return { file, valid: false, error: `Too large: ${(file.size / 1024 / 1024).toFixed(1)}MB`, status: "pending" as const, progress: 0 };
-    }
-    return { file, valid: true, status: "pending" as const, progress: 0 };
+    
+    return validation;
+  });
+}
+
+function createThumbnail(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
   });
 }
 
@@ -39,9 +53,20 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
   const [pendingFiles, setPendingFiles] = useState<FileValidation[]>([]);
   const { toast } = useToast();
 
-  const handleFiles = useCallback((files: FileList | File[]) => {
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
     const validated = validateFiles(files);
     setPendingFiles((prev) => [...prev, ...validated]);
+    
+    // Generate thumbnails asynchronously
+    for (let i = 0; i < validated.length; i++) {
+      const item = validated[i];
+      if (item.valid) {
+        const thumbnail = await createThumbnail(item.file);
+        setPendingFiles((prev) =>
+          prev.map((f) => (f.file === item.file ? { ...f, thumbnail } : f))
+        );
+      }
+    }
   }, []);
 
   const removeFile = useCallback((index: number) => {
@@ -254,52 +279,75 @@ export function UploadButton({ orderToken }: UploadButtonProps) {
             )}
           </div>
 
-          <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-border/50 bg-card p-2">
+          <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto rounded-lg border border-border/50 bg-card p-2 sm:grid-cols-3 md:grid-cols-4">
             {pendingFiles.map((item, index) => (
               <div
                 key={index}
                 className={cn(
-                  "relative overflow-hidden rounded-md px-3 py-2",
-                  item.status === "done" && "bg-green-500/10",
-                  item.status === "error" && "bg-red-500/10",
-                  item.status === "uploading" && "bg-gold/10",
-                  item.status === "pending" && item.valid && "bg-muted/50",
-                  !item.valid && item.status === "pending" && "bg-red-500/10"
+                  "group relative overflow-hidden rounded-lg",
+                  item.status === "done" && "ring-2 ring-green-500",
+                  item.status === "error" && "ring-2 ring-red-500",
+                  item.status === "uploading" && "ring-2 ring-gold",
+                  !item.valid && item.status === "pending" && "ring-2 ring-red-500"
                 )}
               >
-                {/* Progress bar background */}
-                {item.status === "uploading" && (
-                  <div
-                    className="absolute inset-0 bg-gold/20 transition-all"
-                    style={{ width: `${item.progress}%` }}
-                  />
-                )}
-
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    {item.status === "done" && <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />}
-                    {item.status === "error" && <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />}
-                    {item.status === "uploading" && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-gold" />}
-                    {item.status === "pending" && item.valid && <ImageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />}
-                    {item.status === "pending" && !item.valid && <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />}
-
-                    <span className="truncate text-sm">{item.file.name}</span>
-
-                    {item.status === "uploading" && (
-                      <span className="shrink-0 text-xs text-gold">{item.progress}%</span>
-                    )}
-
-                    {item.error && item.status !== "uploading" && (
-                      <span className="shrink-0 text-xs text-red-500">({item.error})</span>
-                    )}
-                  </div>
-
-                  {!isUploading && (
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => removeFile(index)}>
-                      <X className="h-4 w-4" />
-                    </Button>
+                {/* Thumbnail */}
+                <div className="aspect-square bg-muted">
+                  {item.thumbnail ? (
+                    <img
+                      src={item.thumbnail}
+                      alt={item.file.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                    </div>
                   )}
                 </div>
+
+                {/* Progress overlay */}
+                {item.status === "uploading" && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <div className="text-center">
+                      <Loader2 className="mx-auto h-6 w-6 animate-spin text-gold" />
+                      <span className="mt-1 block text-xs font-medium text-white">{item.progress}%</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status overlay */}
+                {item.status === "done" && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-green-500/30">
+                    <CheckCircle className="h-8 w-8 text-green-500" />
+                  </div>
+                )}
+
+                {(item.status === "error" || (!item.valid && item.status === "pending")) && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-red-500/30">
+                    <AlertCircle className="h-8 w-8 text-red-500" />
+                  </div>
+                )}
+
+                {/* File info overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                  <p className="truncate text-xs font-medium text-white">{item.file.name}</p>
+                  {item.error && (
+                    <p className="truncate text-xs text-red-300">{item.error}</p>
+                  )}
+                </div>
+
+                {/* Remove button */}
+                {!isUploading && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1 h-6 w-6 rounded-full bg-black/50 p-0 opacity-0 transition-opacity hover:bg-black/70 group-hover:opacity-100"
+                    onClick={() => removeFile(index)}
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </Button>
+                )}
               </div>
             ))}
           </div>
