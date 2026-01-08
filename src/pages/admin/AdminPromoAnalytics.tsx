@@ -447,7 +447,7 @@ export default function AdminPromoAnalytics() {
                     <TableRow key={s.group}>
                       <TableCell className="font-medium">
                         <Badge variant="outline" className={cn(
-                          s.group === "banner_flash" ? "bg-red-500/20 text-red-500" :
+                          s.group === "banner_flash" ? "bg-charcoal text-gold border-gold/30" :
                           s.group === "banner_default" ? "bg-gold/20 text-gold" :
                           s.group === "control" ? "bg-muted text-muted-foreground" :
                           "bg-muted"
