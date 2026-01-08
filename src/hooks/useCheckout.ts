@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentPromoGroup } from "@/lib/promo-ab";
 import type { PackageId, UpsellId } from "@/lib/pricing-config";
 
 interface CheckoutParams {
@@ -24,8 +25,18 @@ export function useCheckout() {
     setError(null);
 
     try {
+      // Gather promo metadata
+      const promoGroup = getCurrentPromoGroup();
+      const promoVariant = promoGroup === "banner_flash" ? "flash" : promoGroup === "banner_default" ? "default" : null;
+      const sourcePage = window.location.pathname;
+
       const { data, error: fnError } = await supabase.functions.invoke("create-checkout", {
-        body: params,
+        body: {
+          ...params,
+          promoGroup,
+          promoVariant,
+          sourcePage,
+        },
       });
 
       if (fnError) {

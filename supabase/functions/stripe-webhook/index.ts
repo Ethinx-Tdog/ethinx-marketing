@@ -91,13 +91,21 @@ serve(async (req) => {
             }
           }
 
+          // Build update payload with promo_code if found
+          const updatePayload: Record<string, unknown> = {
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            stripe_payment_intent_id: session.payment_intent as string,
+          };
+
+          // Add promo_code if a coupon was applied
+          if (couponCode) {
+            updatePayload.promo_code = couponCode;
+          }
+
           const { error } = await supabase
             .from("orders")
-            .update({
-              status: "paid",
-              paid_at: new Date().toISOString(),
-              stripe_payment_intent_id: session.payment_intent as string,
-            })
+            .update(updatePayload)
             .eq("id", session.metadata.order_id);
 
           if (error) {
