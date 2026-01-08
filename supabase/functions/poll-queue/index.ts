@@ -4,6 +4,14 @@
  * Polls the order_queue table for queued jobs and dispatches them to Modal.
  * Should be invoked periodically via cron or external scheduler.
  *
+ * CRON CONFIGURATION:
+ * -------------------
+ * Target URL: https://ywaseswwmlxjkfpnwaou.supabase.co/functions/v1/poll-queue
+ * Method: POST
+ * Schedule: *\/1 * * * * (every minute)
+ *
+ * Recommended services: cron-job.org, EasyCron, GitHub Actions, or Modal scheduled functions
+ *
  * MODAL ENDPOINT CONTRACT:
  * -------------------------
  * POST https://<your-modal-app>.modal.run/generate
