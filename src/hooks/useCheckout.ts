@@ -1,0 +1,70 @@
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { PackageId, UpsellId } from "@/lib/pricing-config";
+
+interface CheckoutParams {
+  packageId: PackageId;
+  upsellIds?: UpsellId[];
+  email: string;
+  photoFiles?: string[];
+}
+
+interface CheckoutResult {
+  url: string;
+  sessionId: string;
+  orderToken: string;
+}
+
+export function useCheckout() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createCheckout = async (params: CheckoutParams): Promise<CheckoutResult | null> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("create-checkout", {
+        body: params,
+      });
+
+      if (fnError) {
+        throw new Error(fnError.message || "Failed to create checkout session");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data?.url) {
+        throw new Error("No checkout URL returned");
+      }
+
+      return {
+        url: data.url,
+        sessionId: data.sessionId,
+        orderToken: data.orderToken,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Checkout failed";
+      setError(message);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const redirectToCheckout = async (params: CheckoutParams): Promise<void> => {
+    const result = await createCheckout(params);
+    if (result?.url) {
+      window.open(result.url, "_blank");
+    }
+  };
+
+  return {
+    createCheckout,
+    redirectToCheckout,
+    isLoading,
+    error,
+  };
+}

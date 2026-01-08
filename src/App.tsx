@@ -13,6 +13,8 @@ import Terms from "@/pages/Terms";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import NotFound from "@/pages/NotFound";
+import CheckoutSuccess from "@/pages/checkout/CheckoutSuccess";
+import CheckoutCancel from "@/pages/checkout/CheckoutCancel";
 
 // Industry pages
 import RealEstateHeadshots from "@/pages/industries/RealEstateHeadshots";
@@ -46,6 +48,10 @@ export default function App() {
           <Route path="/linkedin-professional-photos" element={<LinkedInProfessionalPhotos />} />
           <Route path="/job-seeker-headshots" element={<JobSeekerHeadshots />} />
           <Route path="/social-influencer-photos" element={<SocialInfluencerPhotos />} />
+          
+          {/* Checkout pages */}
+          <Route path="/checkout/success" element={<CheckoutSuccess />} />
+          <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />

@@ -5,6 +5,19 @@ export type IndustryId = "corporate" | "real_estate" | "tradie" | "healthcare" |
 export type PackageId = "starter" | "professional" | "ultimate";
 export type UpsellId = "real_estate" | "tradie" | "healthcare" | "creative" | "bio_suite" | "rush_3h";
 
+// Stripe price IDs for checkout
+export const STRIPE_PRICES: Record<PackageId | UpsellId, string> = {
+  starter: "price_1Sn99qIik4hNc65MeXyOPCav",
+  professional: "price_1Sn9FfIik4hNc65MloNhA1cw",
+  ultimate: "price_1Sn9FgIik4hNc65MuFz9rADz",
+  real_estate: "price_1Sn9FiIik4hNc65M5T9WkKII",
+  tradie: "price_1Sn9FjIik4hNc65Ms1jcrLpD",
+  healthcare: "price_1Sn9FlIik4hNc65MHWcp6RVS",
+  creative: "price_1Sn9FmIik4hNc65Miij45gjR",
+  bio_suite: "price_1Sn9FnIik4hNc65MVqXsOdkn",
+  rush_3h: "price_1Sn9FoIik4hNc65MoJOmWk0L",
+};
+
 export interface Package {
   id: PackageId;
   name: string;

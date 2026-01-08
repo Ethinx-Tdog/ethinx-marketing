@@ -1,10 +1,13 @@
-import { Check, X, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Check, Sparkles, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { usePricing } from "@/contexts/PricingContext";
-import { getUpsellsForIndustry, getIndustryUpsell, getPackageById, UPSELLS } from "@/lib/pricing-config";
+import { getIndustryUpsell, getPackageById, UPSELLS } from "@/lib/pricing-config";
 import { cn } from "@/lib/utils";
-import { BRAND } from "@/lib/brand";
+import { useCheckout } from "@/hooks/useCheckout";
+import { toast } from "sonner";
 
 export function UpsellModal() {
   const {
@@ -17,15 +20,30 @@ export function UpsellModal() {
     totalPrice,
   } = usePricing();
 
+  const [email, setEmail] = useState("");
+  const { redirectToCheckout, isLoading, error } = useCheckout();
+
   const pkg = selectedPackage ? getPackageById(selectedPackage) : null;
   const industryUpsell = getIndustryUpsell(industry);
   const addons = UPSELLS.filter((u) => u.isAddon);
 
   if (!pkg) return null;
 
-  const handleCheckout = () => {
-    const upsellParams = selectedUpsells.length > 0 ? `&upsells=${selectedUpsells.join(",")}` : "";
-    window.location.href = `https://app.ethinx.solutions/start?plan=${pkg.id}&industry=${industry}${upsellParams}`;
+  const handleCheckout = async () => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    await redirectToCheckout({
+      packageId: pkg.id,
+      upsellIds: selectedUpsells,
+      email,
+    });
+
+    if (error) {
+      toast.error(error);
+    }
   };
 
   return (
@@ -134,6 +152,21 @@ export function UpsellModal() {
               ))}
             </div>
           </div>
+
+          {/* Email input */}
+          <div className="space-y-2">
+            <label htmlFor="checkout-email" className="text-sm font-medium text-foreground">
+              Email for delivery
+            </label>
+            <Input
+              id="checkout-email"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-card border-border/50"
+            />
+          </div>
         </div>
 
         {/* Footer with total and CTA */}
@@ -143,11 +176,18 @@ export function UpsellModal() {
             <p className="text-2xl font-bold text-gold">${totalPrice} AUD</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={closeUpsellModal}>
+            <Button variant="outline" onClick={closeUpsellModal} disabled={isLoading}>
               Skip
             </Button>
-            <Button variant="gold" onClick={handleCheckout}>
-              Continue to Checkout
+            <Button variant="gold" onClick={handleCheckout} disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Continue to Checkout"
+              )}
             </Button>
           </div>
         </div>
