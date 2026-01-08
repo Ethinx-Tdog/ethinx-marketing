@@ -37,7 +37,8 @@
 import { serve } from "../_shared/deps.ts";
 import { sbAdmin } from "../_shared/sb.ts";
 
-const MODAL_ENDPOINT = "https://api.modal.com/ethinx/generate"; // TODO: replace after Modal deploy (STEP 13)
+const MODAL_ENDPOINT = Deno.env.get("MODAL_ENDPOINT")!;
+const MODAL_WEBHOOK_SECRET = Deno.env.get("MODAL_WEBHOOK_SECRET")!;
 
 serve(async () => {
   const { data: item } = await sbAdmin
@@ -61,7 +62,10 @@ serve(async () => {
 
   const res = await fetch(MODAL_ENDPOINT, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${MODAL_WEBHOOK_SECRET}`,
+    },
     body: JSON.stringify(item.payload),
   });
 
