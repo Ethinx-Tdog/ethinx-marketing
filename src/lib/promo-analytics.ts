@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentPromoGroup, type PromoGroup } from "./promo-ab";
 
-type PromoEventType = "promo_banner_impression" | "promo_banner_dismissed" | "promo_banner_cta_clicked" | "promo_ab_assigned";
+type PromoEventType = "viewed" | "dismissed" | "cta_clicked" | "ab_assigned";
 
 interface PromoEventPayload {
   event_type: PromoEventType;
@@ -58,13 +58,13 @@ export const trackPromoEvent = async (
 
 // Convenience functions
 export const trackImpression = (promoCode: string, variant: "default" | "flash", abGroup?: PromoGroup | null) =>
-  trackPromoEvent("promo_banner_impression", promoCode, variant, abGroup);
+  trackPromoEvent("viewed", promoCode, variant, abGroup);
 
 export const trackDismissed = (promoCode: string, variant: "default" | "flash", abGroup?: PromoGroup | null) =>
-  trackPromoEvent("promo_banner_dismissed", promoCode, variant, abGroup);
+  trackPromoEvent("dismissed", promoCode, variant, abGroup);
 
 export const trackCtaClicked = (promoCode: string, variant: "default" | "flash", abGroup?: PromoGroup | null) =>
-  trackPromoEvent("promo_banner_cta_clicked", promoCode, variant, abGroup);
+  trackPromoEvent("cta_clicked", promoCode, variant, abGroup);
 
 export const trackAbAssigned = (abGroup: PromoGroup) =>
-  trackPromoEvent("promo_ab_assigned", "", "default", abGroup);
+  trackPromoEvent("ab_assigned", "", "default", abGroup);
