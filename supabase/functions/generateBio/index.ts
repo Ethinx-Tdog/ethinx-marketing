@@ -5,49 +5,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface BioRequest {
-  name: string;
-  industry: string;
-  tone: string;
-  length: string;
-  platform: string;
-}
-
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const body: BioRequest = await req.json();
+  const { name, industry, tone, length, platform } = await req.json();
 
-    const response = await fetch('https://ethinx.solutions/api/bio/write', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: body.name,
-        industry: body.industry,
-        tone: body.tone,
-        length: body.length,
-        platform: body.platform,
-      }),
-    });
+  const response = await fetch('https://ethinx.solutions/api/bio/write', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      // If using auth token or Bearer key:
+      // 'Authorization': 'Bearer YOUR_API_KEY'
+    },
+    body: JSON.stringify({
+      name,
+      industry,
+      tone,
+      length,
+      platform
+    }),
+  });
 
-    const data = await response.json();
-
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: response.ok ? 200 : response.status,
-    });
-  } catch (error) {
-    console.error('Error calling bio API:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
+  if (!response.ok) {
     return new Response(
-      JSON.stringify({ error: message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ error: 'Failed to generate bio', status: response.status }),
+      { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+
+  const data = await response.json();
+  return new Response(JSON.stringify(data), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
 });
