@@ -8,7 +8,8 @@ import {
   ShieldOff, 
   UserPlus,
   Users,
-  Loader2
+  Loader2,
+  ClipboardList
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -221,6 +222,12 @@ export default function AdminUsers() {
               <Button variant="outline" size="sm">
                 <Users className="mr-2 h-4 w-4" />
                 Orders
+              </Button>
+            </Link>
+            <Link to="/admin/audit">
+              <Button variant="outline" size="sm">
+                <ClipboardList className="mr-2 h-4 w-4" />
+                View Audit Log
               </Button>
             </Link>
             <Button onClick={fetchAdmins} variant="outline" size="sm" disabled={isLoading}>
