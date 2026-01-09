@@ -23,6 +23,7 @@ import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminOrderDetail from "@/pages/admin/AdminOrderDetail";
 import AdminPromoAnalytics from "@/pages/admin/AdminPromoAnalytics";
+import AdminDLQ from "@/pages/admin/AdminDLQ";
 
 // Industry pages
 import RealEstateHeadshots from "@/pages/industries/RealEstateHeadshots";
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="/admin/orders" element={<RequireAdmin><AdminOrders /></RequireAdmin>} />
             <Route path="/admin/orders/:orderId" element={<RequireAdmin><AdminOrderDetail /></RequireAdmin>} />
             <Route path="/admin/promo-analytics" element={<RequireAdmin><AdminPromoAnalytics /></RequireAdmin>} />
+            <Route path="/admin/dlq" element={<RequireAdmin><AdminDLQ /></RequireAdmin>} />
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
