@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      cron_heartbeats: {
+        Row: {
+          consecutive_failures: number
+          created_at: string
+          function_name: string
+          id: string
+          last_beat_at: string
+          last_result: Json | null
+          status: string
+          total_failures: number
+          total_runs: number
+          updated_at: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          created_at?: string
+          function_name: string
+          id?: string
+          last_beat_at?: string
+          last_result?: Json | null
+          status?: string
+          total_failures?: number
+          total_runs?: number
+          updated_at?: string
+        }
+        Update: {
+          consecutive_failures?: number
+          created_at?: string
+          function_name?: string
+          id?: string
+          last_beat_at?: string
+          last_result?: Json | null
+          status?: string
+          total_failures?: number
+          total_runs?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       job_response_history: {
         Row: {
           attempt_number: number
