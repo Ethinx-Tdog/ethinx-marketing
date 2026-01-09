@@ -3,7 +3,7 @@ import { env } from "./env.ts";
 const base = "https://api.resend.com/emails";
 
 // Production flag - set to false to disable actual email sending
-const EMAIL_ENABLED = false;
+const EMAIL_ENABLED = true;
 
 export async function sendEmail(to: string, subject: string, html: string) {
   // Log all email attempts for debugging
