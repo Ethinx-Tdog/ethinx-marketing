@@ -500,6 +500,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          company: string | null
+          created_at: string | null
+          credits_balance: number | null
+          full_name: string | null
+          id: string
+          metadata: Json | null
+          orders_count: number | null
+          referral_code: string | null
+          referred_by: string | null
+          role: string | null
+          total_spent_cents: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          company?: string | null
+          created_at?: string | null
+          credits_balance?: number | null
+          full_name?: string | null
+          id?: string
+          metadata?: Json | null
+          orders_count?: number | null
+          referral_code?: string | null
+          referred_by?: string | null
+          role?: string | null
+          total_spent_cents?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          company?: string | null
+          created_at?: string | null
+          credits_balance?: number | null
+          full_name?: string | null
+          id?: string
+          metadata?: Json | null
+          orders_count?: number | null
+          referral_code?: string | null
+          referred_by?: string | null
+          role?: string | null
+          total_spent_cents?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
