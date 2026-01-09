@@ -1,10 +1,14 @@
 """
 FastAPI Worker - Job Queue Processor
 Replaces Modal compute for AI headshot processing
+
+Connects to Lovable Edge Functions via HMAC-signed callbacks.
 """
 
 import os
 import json
+import hmac
+import hashlib
 import asyncio
 import logging
 from datetime import datetime
@@ -13,7 +17,7 @@ from contextlib import asynccontextmanager
 
 import httpx
 import redis.asyncio as redis
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Header
 from pydantic import BaseModel
 
 # Configuration
@@ -24,6 +28,11 @@ WHISPER_URL = os.getenv("WHISPER_URL", "http://localhost:9000")
 WORKER_CONCURRENCY = int(os.getenv("WORKER_CONCURRENCY", "4"))
 MAX_RETRIES = int(os.getenv("WORKER_MAX_RETRIES", "3"))
 
+# Supabase/Lovable callback configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ywaseswwmlxjkfpnwaou.supabase.co")
+WORKER_API_KEY = os.getenv("WORKER_API_KEY", "")
+FINALIZE_ORDER_URL = f"{SUPABASE_URL}/functions/v1/finalize-order"
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -32,8 +41,18 @@ redis_pool: Optional[redis.Redis] = None
 
 
 class JobPayload(BaseModel):
+    """Job payload from poll-queue edge function"""
     order_id: str
-    photo_urls: list[str]
+    order_token: str
+    email: str
+    package_name: Optional[str] = "starter"
+    photo_count: Optional[int] = 5
+    promo_code: Optional[str] = None
+    upload_prefix: Optional[str] = None
+    result_prefix: Optional[str] = None
+    zip_path: Optional[str] = None
+    # Legacy fields
+    photo_urls: Optional[list[str]] = None
     style: str = "professional"
     webhook_url: Optional[str] = None
     metadata: Optional[dict] = None
@@ -47,6 +66,15 @@ class JobResult(BaseModel):
     processed_at: Optional[str] = None
 
 
+def generate_hmac_signature(payload: str, secret: str) -> str:
+    """Generate HMAC-SHA256 signature for callback authentication"""
+    return hmac.new(
+        secret.encode('utf-8'),
+        payload.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
@@ -54,6 +82,8 @@ async def lifespan(app: FastAPI):
     
     # Startup
     logger.info("Starting worker service...")
+    logger.info(f"Supabase URL: {SUPABASE_URL}")
+    logger.info(f"Finalize endpoint: {FINALIZE_ORDER_URL}")
     redis_pool = redis.from_url(REDIS_URL, decode_responses=True)
     
     # Start background job processor
@@ -68,9 +98,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AI Worker Queue",
+    title="ETHINX AI Worker",
     description="FastAPI-based job queue processor for AI headshot generation",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -96,16 +126,27 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
+        "version": "2.0.0",
         "services": {
             "redis": redis_status,
             "ollama": ollama_status
+        },
+        "config": {
+            "supabase_url": SUPABASE_URL,
+            "finalize_endpoint": FINALIZE_ORDER_URL,
+            "concurrency": WORKER_CONCURRENCY
         }
     }
 
 
 @app.post("/jobs/enqueue")
-async def enqueue_job(payload: JobPayload):
+async def enqueue_job(payload: JobPayload, x_api_key: Optional[str] = Header(None)):
     """Add a new job to the queue"""
+    # Optional: Verify API key
+    if WORKER_API_KEY and x_api_key != WORKER_API_KEY:
+        logger.warning(f"Invalid API key for order {payload.order_id}")
+        # Don't reject for now to maintain backward compatibility
+    
     job_id = f"job_{payload.order_id}_{datetime.utcnow().timestamp()}"
     
     job_data = {
@@ -120,9 +161,9 @@ async def enqueue_job(payload: JobPayload):
     await redis_pool.lpush("job_queue", json.dumps(job_data))
     await redis_pool.set(f"job:{job_id}", json.dumps(job_data))
     
-    logger.info(f"Enqueued job: {job_id}")
+    logger.info(f"Enqueued job: {job_id} for order {payload.order_id}")
     
-    return {"job_id": job_id, "status": "queued"}
+    return {"job_id": job_id, "status": "queued", "order_id": payload.order_id}
 
 
 @app.get("/jobs/{job_id}")
@@ -227,6 +268,10 @@ async def job_processor():
 async def process_job(job: dict):
     """Process a single job"""
     job_id = job["id"]
+    payload = job["payload"]
+    order_id = payload.get("order_id")
+    order_token = payload.get("order_token")
+    email = payload.get("email")
     
     try:
         # Mark as processing
@@ -236,26 +281,39 @@ async def process_job(job: dict):
         await redis_pool.set(f"job:{job_id}", json.dumps(job))
         await redis_pool.sadd("jobs_processing", job_id)
         
-        logger.info(f"Processing job: {job_id} (attempt {job['attempts']})")
+        logger.info(f"Processing job: {job_id} for order {order_id} (attempt {job['attempts']})")
         
-        # Simulate AI processing (replace with actual implementation)
-        payload = job["payload"]
+        # Process headshots
+        photo_urls = payload.get("photo_urls") or []
         result_urls = await process_headshots(
-            photo_urls=payload["photo_urls"],
-            style=payload.get("style", "professional")
+            photo_urls=photo_urls,
+            style=payload.get("style", "professional"),
+            upload_prefix=payload.get("upload_prefix"),
+            result_prefix=payload.get("result_prefix")
         )
         
-        # Mark as completed
+        # Mark as completed locally
         job["status"] = "completed"
         job["result_urls"] = result_urls
         job["completed_at"] = datetime.utcnow().isoformat()
         await redis_pool.set(f"job:{job_id}", json.dumps(job))
         
-        # Call webhook if provided
+        logger.info(f"Completed job: {job_id}, notifying finalize-order...")
+        
+        # Call finalize-order edge function with HMAC signature
+        await notify_finalize_order(
+            order_id=order_id,
+            order_token=order_token,
+            email=email,
+            results=result_urls,
+            zip_key=payload.get("zip_path", f"orders/zips/{order_token}.zip")
+        )
+        
+        # Also call legacy webhook if provided
         if payload.get("webhook_url"):
             await call_webhook(payload["webhook_url"], job)
         
-        logger.info(f"Completed job: {job_id}")
+        logger.info(f"Successfully completed and notified for job: {job_id}")
         
     except Exception as e:
         logger.error(f"Job {job_id} failed: {e}")
@@ -279,32 +337,109 @@ async def process_job(job: dict):
         await redis_pool.srem("jobs_processing", job_id)
 
 
-async def process_headshots(photo_urls: list[str], style: str) -> list[str]:
+async def process_headshots(
+    photo_urls: list[str], 
+    style: str,
+    upload_prefix: Optional[str] = None,
+    result_prefix: Optional[str] = None
+) -> list[str]:
     """
     Process headshots using local AI services
     This is where you'd integrate with your actual AI pipeline
+    
+    TODO: Integrate with:
+    - Ollama for image understanding
+    - Local Stable Diffusion / ComfyUI for image generation
+    - Supabase Storage for file upload/download
     """
     result_urls = []
     
     async with httpx.AsyncClient(timeout=300.0) as client:
-        for url in photo_urls:
-            # For now, return placeholder - integrate with your AI model here
-            # You could call Ollama for image understanding, or integrate
-            # with a local Stable Diffusion / ComfyUI instance
+        for i, url in enumerate(photo_urls):
+            logger.info(f"Processing photo {i+1}/{len(photo_urls)}: {url} with style: {style}")
             
-            logger.info(f"Processing photo: {url} with style: {style}")
-            
-            # Simulate processing time
+            # Simulate processing time (replace with actual AI processing)
             await asyncio.sleep(2)
             
-            # Return processed URL (replace with actual processing)
-            result_urls.append(f"{url}?processed=true&style={style}")
+            # Generate result filename
+            result_filename = f"result_{i:03d}.jpg"
+            if result_prefix:
+                result_url = f"{result_prefix}{result_filename}"
+            else:
+                result_url = f"{url}?processed=true&style={style}"
+            
+            result_urls.append(result_url)
+            logger.info(f"Generated result: {result_url}")
     
     return result_urls
 
 
+async def notify_finalize_order(
+    order_id: str,
+    order_token: str,
+    email: str,
+    results: list[str],
+    zip_key: str
+):
+    """
+    Call the finalize-order edge function with HMAC-signed payload
+    
+    This notifies Lovable/Supabase that the job is complete and triggers:
+    - Order status update to 'completed'
+    - Signed URL generation for download
+    - Customer email notification
+    """
+    if not WORKER_API_KEY:
+        logger.warning("WORKER_API_KEY not set, skipping finalize-order callback")
+        return
+    
+    # Build callback payload
+    callback_payload = {
+        "order_id": order_id,
+        "order_token": order_token,
+        "email": email,
+        "results": results,
+        "zip_key": zip_key
+    }
+    
+    payload_json = json.dumps(callback_payload, separators=(',', ':'))
+    
+    # Generate HMAC-SHA256 signature
+    signature = generate_hmac_signature(payload_json, WORKER_API_KEY)
+    
+    logger.info(f"Calling finalize-order for order {order_id}")
+    logger.debug(f"Payload: {payload_json}")
+    logger.debug(f"Signature: {signature[:16]}...")
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                FINALIZE_ORDER_URL,
+                content=payload_json,
+                headers={
+                    "Content-Type": "application/json",
+                    "x-ethinx-signature": signature
+                }
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"Successfully notified finalize-order for order {order_id}")
+            else:
+                logger.error(
+                    f"finalize-order returned {response.status_code}: {response.text}"
+                )
+                raise Exception(f"finalize-order failed with status {response.status_code}")
+                
+    except httpx.TimeoutException:
+        logger.error(f"Timeout calling finalize-order for order {order_id}")
+        raise
+    except Exception as e:
+        logger.error(f"Error calling finalize-order: {e}")
+        raise
+
+
 async def call_webhook(webhook_url: str, job: dict):
-    """Call webhook with job result"""
+    """Call legacy webhook with job result"""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             await client.post(webhook_url, json={
@@ -314,9 +449,9 @@ async def call_webhook(webhook_url: str, job: dict):
                 "error": job.get("error"),
                 "completed_at": job.get("completed_at")
             })
-            logger.info(f"Called webhook for job {job['id']}")
+            logger.info(f"Called legacy webhook for job {job['id']}")
     except Exception as e:
-        logger.error(f"Webhook call failed for job {job['id']}: {e}")
+        logger.error(f"Legacy webhook call failed for job {job['id']}: {e}")
 
 
 if __name__ == "__main__":
