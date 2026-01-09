@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { Lock, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Lock, Mail, Eye, EyeOff, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SEO } from "@/components/SEO";
@@ -8,12 +8,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 export default function AdminLogin() {
-  const { user, isAdmin, isLoading, signIn } = useAuth();
+  const { user, isAdmin, isLoading, signIn, signUp, signOut } = useAuth();
   const location = useLocation();
   const from = (location.state as { from?: string })?.from || "/admin/orders";
 
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,7 +35,7 @@ export default function AdminLogin() {
         <p className="mb-6 text-center text-muted-foreground">
           Your account doesn't have admin privileges.
         </p>
-        <Button onClick={() => useAuth().signOut()} variant="outline">
+        <Button onClick={() => signOut()} variant="outline">
           Sign Out
         </Button>
       </div>
@@ -47,12 +50,35 @@ export default function AdminLogin() {
       return;
     }
 
-    setIsSubmitting(true);
-    const { error } = await signIn(email, password);
-    setIsSubmitting(false);
+    if (mode === "register") {
+      if (password !== confirmPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
+      if (password.length < 6) {
+        toast.error("Password must be at least 6 characters");
+        return;
+      }
 
-    if (error) {
-      toast.error(error.message || "Failed to sign in");
+      setIsSubmitting(true);
+      const { error } = await signUp(email, password);
+      setIsSubmitting(false);
+
+      if (error) {
+        toast.error(error.message || "Failed to create account");
+      } else {
+        toast.success("Account created! You can now sign in.");
+        setMode("login");
+        setConfirmPassword("");
+      }
+    } else {
+      setIsSubmitting(true);
+      const { error } = await signIn(email, password);
+      setIsSubmitting(false);
+
+      if (error) {
+        toast.error(error.message || "Failed to sign in");
+      }
     }
   };
 
@@ -73,13 +99,37 @@ export default function AdminLogin() {
           <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-gold/20">
             <Lock className="h-7 w-7 text-gold" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Admin Login</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {mode === "register" ? "Create Admin Account" : "Admin Login"}
+          </h1>
           <p className="mt-2 text-muted-foreground">
-            Sign in to access the admin dashboard
+            {mode === "register" 
+              ? "Register to request admin access" 
+              : "Sign in to access the admin dashboard"}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === "register" && (
+            <div className="space-y-2">
+              <label htmlFor="fullName" className="text-sm font-medium text-foreground">
+                Full Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Your full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="pl-10"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium text-foreground">
               Email
@@ -123,16 +173,51 @@ export default function AdminLogin() {
             </div>
           </div>
 
+          {mode === "register" && (
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="confirmPassword"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 pr-10"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+          )}
+
           <Button type="submit" variant="gold" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                {mode === "register" ? "Creating Account..." : "Signing in..."}
               </>
             ) : (
-              "Sign In"
+              mode === "register" ? "Create Account" : "Sign In"
             )}
           </Button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === "login" ? "register" : "login");
+                setConfirmPassword("");
+              }}
+              className="text-sm text-gold hover:underline"
+            >
+              {mode === "login" 
+                ? "Need an account? Register" 
+                : "Already have an account? Sign In"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
