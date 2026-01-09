@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit: {
+        Row: {
+          action: string
+          actor_user_id: string
+          id: string
+          metadata: Json | null
+          target_email: string | null
+          ts: string
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          id?: string
+          metadata?: Json | null
+          target_email?: string | null
+          ts?: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          id?: string
+          metadata?: Json | null
+          target_email?: string | null
+          ts?: string
+        }
+        Relationships: []
+      }
       credit_transactions: {
         Row: {
           amount: number

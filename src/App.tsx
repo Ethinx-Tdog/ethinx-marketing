@@ -29,6 +29,7 @@ import AdminPromoAnalytics from "@/pages/admin/AdminPromoAnalytics";
 import AdminDLQ from "@/pages/admin/AdminDLQ";
 import AdminMonitoring from "@/pages/admin/AdminMonitoring";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminAuditLog from "@/pages/admin/AdminAuditLog";
 
 // Industry pages
 import RealEstateHeadshots from "@/pages/industries/RealEstateHeadshots";
@@ -82,6 +83,7 @@ export default function App() {
             <Route path="/admin/dlq" element={<RequireAdmin><AdminDLQ /></RequireAdmin>} />
             <Route path="/admin/monitoring" element={<RequireAdmin><AdminMonitoring /></RequireAdmin>} />
             <Route path="/admin/users" element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
+            <Route path="/admin/audit" element={<RequireAdmin><AdminAuditLog /></RequireAdmin>} />
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
