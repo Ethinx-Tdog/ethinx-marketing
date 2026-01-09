@@ -32,7 +32,7 @@
 import { serve } from "../_shared/deps.ts";
 import { sbAdmin } from "../_shared/sb.ts";
 import { env } from "../_shared/env.ts";
-import { sendEmail, tpl } from "../_shared/email.ts";
+import { sendEmail, sendAdminAlert, tpl } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -148,6 +148,13 @@ async function moveToDeadLetterQueue(
     .from("orders")
     .update({ status: "failed" })
     .eq("id", orderId);
+
+  // Send admin notification email
+  const customerEmail = (payload.email as string) || "unknown";
+  await sendAdminAlert(
+    `⚠️ Order ${orderId.slice(0, 8)} moved to DLQ`,
+    tpl.dlqAlert(orderId, customerEmail, errorMessage, retryCount)
+  );
 
   console.log(`Order ${orderId} successfully moved to dead-letter queue`);
 }

@@ -34,4 +34,28 @@ export const tpl = {
     `<h2>Receipt</h2><p>Amount: ${(amount / 100).toFixed(2)} ${currency.toUpperCase()}</p>`,
 
   followup: () => `<h2>How did we do?</h2>`,
+
+  dlqAlert: (orderId: string, email: string, errorMessage: string, retryCount: number) =>
+    `<h2>⚠️ Order Moved to Dead Letter Queue</h2>
+    <p><strong>Order ID:</strong> ${orderId}</p>
+    <p><strong>Customer Email:</strong> ${email}</p>
+    <p><strong>Retry Attempts:</strong> ${retryCount}</p>
+    <p><strong>Error:</strong></p>
+    <pre style="background:#f5f5f5;padding:12px;border-radius:4px;overflow-x:auto;">${errorMessage}</pre>
+    <p><a href="${env.SITE_URL}/admin/dlq" style="display:inline-block;padding:12px 24px;background:#dc2626;color:white;text-decoration:none;border-radius:6px;">View Dead Letter Queue</a></p>`,
 };
+
+export async function sendAdminAlert(subject: string, html: string) {
+  const adminEmail = env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    console.log("ADMIN_EMAIL not configured, skipping admin notification");
+    return null;
+  }
+  
+  try {
+    return await sendEmail(adminEmail, subject, html);
+  } catch (err) {
+    console.error("Failed to send admin alert:", err);
+    return null;
+  }
+}

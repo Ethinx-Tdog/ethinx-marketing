@@ -2,6 +2,7 @@ export const env = {
   SITE_URL: Deno.env.get("SITE_URL")!,
   FROM_EMAIL: Deno.env.get("FROM_EMAIL")!,
   SENDER_NAME: Deno.env.get("SENDER_NAME") ?? "ETHINX",
+  ADMIN_EMAIL: Deno.env.get("ADMIN_EMAIL") ?? "",
   SUPABASE_URL: Deno.env.get("SUPABASE_URL")!,
   SUPABASE_SERVICE_ROLE_KEY: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   STRIPE_SECRET_KEY: Deno.env.get("STRIPE_SECRET_KEY")!,
