@@ -230,6 +230,35 @@ export type Database = {
         }
         Relationships: []
       }
+      order_emails: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_emails_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_queue: {
         Row: {
           attempts: number
@@ -446,6 +475,36 @@ export type Database = {
           },
         ]
       }
+      rate_limit_log: {
+        Row: {
+          blocked_at: string | null
+          created_at: string | null
+          endpoint: string
+          id: string
+          identifier: string
+          request_count: number | null
+          window_start: string | null
+        }
+        Insert: {
+          blocked_at?: string | null
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          identifier: string
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Update: {
+          blocked_at?: string | null
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          identifier?: string
+          request_count?: number | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean | null
@@ -630,6 +689,8 @@ export type Database = {
         }[]
       }
       get_credit_balance: { Args: { p_user_id: string }; Returns: number }
+      get_order_by_token: { Args: { p_token: string }; Returns: Json }
+      get_order_email: { Args: { p_order_token: string }; Returns: string }
       get_user_credit_summary: {
         Args: { p_user_id: string }
         Returns: {
@@ -640,6 +701,7 @@ export type Database = {
           total_spent: number
         }[]
       }
+      get_user_orders: { Args: { p_limit?: number }; Returns: Json }
       grant_admin: { Args: { p_email: string }; Returns: Json }
       has_role: {
         Args: {

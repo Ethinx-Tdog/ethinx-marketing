@@ -66,13 +66,15 @@ interface Subscription {
 }
 
 interface Order {
-  id: string;
   order_token: string;
   status: string;
   amount_cents: number;
+  currency: string;
   package_name: string | null;
+  photo_count: number;
   created_at: string;
   paid_at: string | null;
+  completed_at: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string }> = {
@@ -157,15 +159,18 @@ export default function AccountDashboard() {
 
       setSubscription(sub as Subscription | null);
 
-      // Load orders
-      const { data: userOrders } = await supabase
-        .from("orders")
-        .select("id, order_token, status, amount_cents, package_name, created_at, paid_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
+      // Load orders via secure RPC (no id exposed)
+      const { data: ordersResult } = await supabase.rpc("get_user_orders", {
+        p_limit: 20,
+      });
 
-      setOrders((userOrders as Order[]) || []);
+      // RPC returns { orders: [...] } or { error: ... }
+      const ordersData = ordersResult as unknown as { orders?: Order[]; error?: string } | null;
+      if (ordersData?.orders) {
+        setOrders(ordersData.orders);
+      } else {
+        setOrders([]);
+      }
     } catch (error) {
       console.error("Error loading dashboard:", error);
       toast({
@@ -473,7 +478,7 @@ export default function AccountDashboard() {
                       const StatusIcon = statusConfig.icon;
 
                       return (
-                        <TableRow key={order.id}>
+                        <TableRow key={order.order_token}>
                           <TableCell className="text-muted-foreground">
                             {formatDate(order.created_at)}
                           </TableCell>

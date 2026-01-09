@@ -2,39 +2,46 @@ import { serve } from "../_shared/deps.ts";
 import { env } from "../_shared/env.ts";
 import { sbAdmin } from "../_shared/sb.ts";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { 
-  containsPathTraversal, 
-  isValidStorageKey, 
-  checkRateLimit, 
-  getClientIdentifier 
-} from "../_shared/validation.ts";
+import { containsPathTraversal, isValidStorageKey } from "../_shared/validation.ts";
+import { checkRateLimitPersistent, getRateLimitIdentifier } from "../_shared/rate-limiter.ts";
 
 serve(async (req) => {
   // Handle CORS
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
-  
+
   const origin = req.headers.get("Origin");
   const corsHeaders = getCorsHeaders(origin);
 
   try {
-    // Rate limiting: 30 requests per minute per IP
-    const clientId = getClientIdentifier(req);
-    const rateLimit = checkRateLimit(`signed-url:${clientId}`, { 
-      windowMs: 60000, 
-      maxRequests: 30 
+    // Get user ID if authenticated
+    let userId: string | undefined;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData } = await sbAdmin.auth.getUser(token);
+      userId = userData?.user?.id;
+    }
+
+    // Persistent rate limiting: 30 requests per minute per IP+user
+    const identifier = getRateLimitIdentifier(req, userId);
+    const rateLimit = await checkRateLimitPersistent(sbAdmin, identifier, {
+      windowMs: 60000,
+      maxRequests: 30,
+      endpoint: "get-signed-url",
     });
-    
+
     if (!rateLimit.allowed) {
+      // Log blocked request for alerting (trigger handles audit log)
       return new Response(
         JSON.stringify({ error: "Rate limit exceeded. Try again later." }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
             "Content-Type": "application/json",
-            "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000))
-          } 
+            "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+          },
         }
       );
     }
@@ -75,9 +82,9 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    
+
     const orderToken = keyParts[1];
-    
+
     // Verify the order exists and get ownership info
     // SECURITY: Only select minimal fields needed for authorization - no sensitive data
     const { data: order, error: orderError } = await sbAdmin
@@ -93,29 +100,22 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is authenticated and owns this order
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: userData } = await sbAdmin.auth.getUser(token);
-      
-      if (userData?.user) {
-        // Authenticated user - verify they own this order
-        if (order.user_id && order.user_id !== userData.user.id) {
-          // Check if user is admin
-          const { data: roleData } = await sbAdmin
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", userData.user.id)
-            .eq("role", "admin")
-            .single();
-          
-          if (!roleData) {
-            return new Response(
-              JSON.stringify({ error: "Access denied" }),
-              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
+    // Check authorization
+    if (userId) {
+      // Authenticated user - verify they own this order or are admin
+      if (order.user_id && order.user_id !== userId) {
+        const { data: roleData } = await sbAdmin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("role", "admin")
+          .single();
+
+        if (!roleData) {
+          return new Response(
+            JSON.stringify({ error: "Access denied" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
       }
     }
