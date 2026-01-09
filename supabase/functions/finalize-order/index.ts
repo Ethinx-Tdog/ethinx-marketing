@@ -1,11 +1,11 @@
 /**
  * finalize-order Edge Function
  *
- * Callback endpoint for Modal to signal job completion.
+ * Callback endpoint for Worker API to signal job completion.
  * Verifies HMAC signature and updates order status.
  *
- * MODAL CALLBACK CONTRACT:
- * -------------------------
+ * WORKER CALLBACK CONTRACT (Self-Hosted):
+ * ----------------------------------------
  * POST https://<supabase-url>/functions/v1/finalize-order
  *
  * Headers:
@@ -21,7 +21,7 @@
  * }
  *
  * HMAC Signature:
- *   Sign the raw JSON body with MODAL_WEBHOOK_SECRET (hex-encoded)
+ *   Sign the raw JSON body with WORKER_API_KEY (hex-encoded)
  *   Python example:
  *     import hmac, hashlib
  *     sig = hmac.new(bytes.fromhex(SECRET), body.encode(), hashlib.sha256).hexdigest()
