@@ -143,35 +143,67 @@ serve(async () => {
     responseBody = await res.clone().text();
   }
 
+  const MAX_RETRIES = 5;
+
   // Handle retryable errors (5xx, 429)
   if (res.status >= 500 || res.status === 429) {
     const errorText = typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody);
+    const newAttempts = item.attempts + 1;
     
     await logJobResponse(
       orderId,
       item.id,
-      "retry",
+      newAttempts >= MAX_RETRIES ? "error" : "retry",
       res.status,
       responseBody,
-      `Retrying due to status ${res.status}: ${errorText}`,
-      item.attempts + 1,
+      `${newAttempts >= MAX_RETRIES ? "Max retries exceeded" : "Retrying"} - status ${res.status}: ${errorText}`,
+      newAttempts,
       durationMs
     );
+
+    // Move to DLQ if max retries exceeded
+    if (newAttempts >= MAX_RETRIES) {
+      await sbAdmin
+        .from("order_queue")
+        .update({
+          status: "failed",
+          attempts: newAttempts,
+          last_error: `Max retries (${MAX_RETRIES}) exceeded - status ${res.status}: ${errorText}`,
+        })
+        .eq("id", item.id);
+
+      // Move to dead letter queue
+      await sbAdmin.from("dead_letter_queue").insert({
+        queue_id: item.id,
+        order_id: orderId,
+        payload: item.payload,
+        error_message: `Max retries exceeded after ${MAX_RETRIES} attempts. Last error: ${res.status} - ${errorText}`,
+        attempts: newAttempts,
+      });
+
+      console.log(`[DLQ] Order ${orderId} moved to dead letter queue after ${MAX_RETRIES} attempts`);
+      await recordHeartbeat(false, { dlq: true, order_id: orderId, attempts: newAttempts });
+
+      return new Response(
+        JSON.stringify({ failed: true, reason: "Max retries exceeded", attempts: newAttempts }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     await sbAdmin
       .from("order_queue")
       .update({
         status: "queued", // Keep as queued for retry
-        attempts: item.attempts + 1,
+        attempts: newAttempts,
         last_error: `Retrying due to status ${res.status}: ${errorText}`,
       })
       .eq("id", item.id);
 
-    console.log(`[RETRY] Order ${orderId} - Status ${res.status}, Attempt ${item.attempts + 1}`);
-    await recordHeartbeat(false, { retry: true, order_id: orderId, status: res.status });
+    console.log(`[RETRY] Order ${orderId} - Status ${res.status}, Attempt ${newAttempts}/${MAX_RETRIES}`);
+    await recordHeartbeat(false, { retry: true, order_id: orderId, status: res.status, attempt: newAttempts });
 
     return new Response(
-      JSON.stringify({ retry: true, reason: `Status ${res.status}`, delay: 60, attempt: item.attempts + 1 }),
+      JSON.stringify({ retry: true, reason: `Status ${res.status}`, delay: 60, attempt: newAttempts, max: MAX_RETRIES }),
       { headers: { "Content-Type": "application/json" } }
     );
   }
