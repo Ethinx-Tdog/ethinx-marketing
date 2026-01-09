@@ -20,6 +20,7 @@ import CheckoutSuccess from "@/pages/checkout/CheckoutSuccess";
 import CheckoutCancel from "@/pages/checkout/CheckoutCancel";
 import OrderStatus from "@/pages/OrderStatus";
 import CreditStore from "@/pages/CreditStore";
+import AccountDashboard from "@/pages/AccountDashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminOrderDetail from "@/pages/admin/AdminOrderDetail";
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="/order-status" element={<OrderStatus />} />
             <Route path="/credits" element={<CreditStore />} />
             <Route path="/credits/success" element={<CheckoutSuccess />} />
+            <Route path="/account" element={<AccountDashboard />} />
             
             {/* Admin pages */}
             <Route path="/admin/login" element={<AdminLogin />} />
