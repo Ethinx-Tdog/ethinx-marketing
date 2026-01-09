@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, 
   RefreshCw, 
@@ -57,42 +57,61 @@ interface Admin {
 export default function AdminUsers() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [isGranting, setIsGranting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Check if current user is admin via get_admins RPC
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      if (!user) {
+        navigate("/");
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc("get_admins");
+        
+        if (error) {
+          console.error("Error checking admin access:", error);
+          navigate("/");
+          return;
+        }
+
+        // If user is not in the admin list, redirect
+        const isAdmin = data?.some((admin: Admin) => admin.user_id === user.id);
+        if (!isAdmin) {
+          toast.error("Access denied: Admin privileges required");
+          navigate("/");
+          return;
+        }
+
+        setAdmins(data || []);
+        setIsCheckingAccess(false);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error checking admin access:", err);
+        navigate("/");
+      }
+    };
+
+    checkAdminAccess();
+  }, [user, navigate]);
 
   const fetchAdmins = async () => {
     setIsLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      const { data, error } = await supabase.rpc("get_admins");
 
-      if (!token) {
-        toast.error("Please sign in");
-        return;
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action: "list", email: "dummy" }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch admins");
-      }
-
-      setAdmins(data.admins || []);
+      setAdmins(data || []);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to fetch admins";
       toast.error(message);
@@ -100,10 +119,6 @@ export default function AdminUsers() {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchAdmins();
-  }, []);
 
   const grantAdmin = async () => {
     if (!newAdminEmail.trim()) {
@@ -113,33 +128,21 @@ export default function AdminUsers() {
 
     setIsGranting(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      const { data, error } = await supabase.rpc("grant_admin", {
+        p_email: newAdminEmail.trim(),
+      });
 
-      if (!token) {
-        toast.error("Please sign in");
-        return;
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action: "grant", email: newAdminEmail.trim() }),
-        }
-      );
+      const result = data as { success: boolean; message?: string; error?: string };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to grant admin");
+      if (!result.success) {
+        throw new Error(result.error || "Failed to grant admin");
       }
 
-      toast.success(data.message);
+      toast.success(result.message || "Admin access granted");
       setNewAdminEmail("");
       setIsDialogOpen(false);
       fetchAdmins();
@@ -153,33 +156,21 @@ export default function AdminUsers() {
 
   const revokeAdmin = async (email: string) => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      const { data, error } = await supabase.rpc("revoke_admin", {
+        p_email: email,
+      });
 
-      if (!token) {
-        toast.error("Please sign in");
-        return;
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-admin`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action: "revoke", email }),
-        }
-      );
+      const result = data as { success: boolean; message?: string; error?: string };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to revoke admin");
+      if (!result.success) {
+        throw new Error(result.error || "Failed to revoke admin");
       }
 
-      toast.success(data.message);
+      toast.success(result.message || "Admin access revoked");
       fetchAdmins();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to revoke admin";
@@ -194,6 +185,15 @@ export default function AdminUsers() {
       year: "numeric",
     });
   };
+
+  // Show loading while checking access
+  if (isCheckingAccess) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

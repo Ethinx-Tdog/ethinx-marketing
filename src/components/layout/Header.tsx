@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Shield } from "lucide-react";
 import { BRAND } from "@/lib/brand";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { to: "/how-it-works", label: "How it works" },
@@ -12,6 +13,7 @@ const navLinks = [
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const { isAdmin } = useAuth();
 
   const closeMenu = useCallback(() => setIsOpen(false), []);
 
@@ -57,6 +59,19 @@ export default function Header() {
               {link.label}
             </NavLink>
           ))}
+          {isAdmin && (
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) =>
+                `flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-primary ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`
+              }
+            >
+              <Shield className="h-4 w-4" />
+              Admin
+            </NavLink>
+          )}
         </div>
 
         {/* Desktop CTA */}
@@ -136,12 +151,33 @@ export default function Header() {
             </NavLink>
           ))}
 
+          {isAdmin && (
+            <NavLink
+              to="/admin/users"
+              onClick={closeMenu}
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-4 py-3 rounded-r-lg text-base font-medium transition-all duration-300 border-l-2 ${
+                  isActive
+                    ? "border-l-[#FFD700] bg-[#FFD700]/10"
+                    : "border-l-transparent hover:border-l-[#FFD700]/50 hover:bg-white/5"
+                } ${isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"}`
+              }
+              style={({ isActive }) => ({ 
+                color: isActive ? "#FFD700" : "#FFFFFF",
+                transitionDelay: isOpen ? `${(navLinks.length + 1) * 75}ms` : '0ms'
+              })}
+            >
+              <Shield className="h-4 w-4" />
+              Admin
+            </NavLink>
+          )}
+
           <div 
             className={`mt-6 pt-4 border-t border-[#FFD700]/20 space-y-3 transition-all duration-300 ${
               isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
             }`}
             style={{ 
-              transitionDelay: isOpen ? `${(navLinks.length + 1) * 75}ms` : '0ms'
+              transitionDelay: isOpen ? `${(navLinks.length + 2) * 75}ms` : '0ms'
             }}
           >
             <Link

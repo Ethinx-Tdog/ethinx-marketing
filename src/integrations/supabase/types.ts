@@ -590,6 +590,15 @@ export type Database = {
         Args: { p_amount: number; p_description?: string; p_user_id: string }
         Returns: boolean
       }
+      get_admins: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          role: string
+          user_id: string
+        }[]
+      }
       get_credit_balance: { Args: { p_user_id: string }; Returns: number }
       get_user_credit_summary: {
         Args: { p_user_id: string }
@@ -601,6 +610,7 @@ export type Database = {
           total_spent: number
         }[]
       }
+      grant_admin: { Args: { p_email: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -608,6 +618,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      revoke_admin: { Args: { p_email: string }; Returns: Json }
       transfer_credits: {
         Args: {
           p_amount: number
