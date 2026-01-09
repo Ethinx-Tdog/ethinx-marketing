@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      order_dlq: {
+        Row: {
+          created_at: string
+          error_message: string
+          failed_at: string
+          id: string
+          order_id: string
+          original_payload: Json
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          retry_count: number
+        }
+        Insert: {
+          created_at?: string
+          error_message: string
+          failed_at?: string
+          id?: string
+          order_id: string
+          original_payload?: Json
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retry_count?: number
+        }
+        Update: {
+          created_at?: string
+          error_message?: string
+          failed_at?: string
+          id?: string
+          order_id?: string
+          original_payload?: Json
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          retry_count?: number
+        }
+        Relationships: []
+      }
       order_queue: {
         Row: {
           attempts: number

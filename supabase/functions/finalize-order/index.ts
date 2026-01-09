@@ -39,6 +39,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ethinx-signature",
 };
 
+const MAX_RETRIES = 3;
+
 function hexToBytes(h: string) {
   const a = new Uint8Array(h.length / 2);
   for (let i = 0; i < h.length; i += 2) a[i / 2] = parseInt(h.slice(i, i + 2), 16);
@@ -67,7 +69,7 @@ async function verify(req: Request) {
 
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  maxRetries = 3,
+  maxRetries = MAX_RETRIES,
   baseDelay = 1000
 ): Promise<T> {
   let lastError: Error | undefined;
@@ -113,6 +115,43 @@ async function updateQueueStatus(orderId: string, status: string, errorMsg?: str
     .eq("order_id", orderId);
 }
 
+async function moveToDeadLetterQueue(
+  orderId: string,
+  payload: Record<string, unknown>,
+  errorMessage: string,
+  retryCount: number
+) {
+  console.log(`Moving order ${orderId} to dead-letter queue after ${retryCount} failed attempts`);
+  
+  const { error } = await sbAdmin
+    .from("order_dlq")
+    .insert({
+      order_id: orderId,
+      original_payload: payload,
+      error_message: errorMessage,
+      retry_count: retryCount,
+    });
+
+  if (error) {
+    console.error(`Failed to insert into DLQ: ${error.message}`);
+    throw new Error(`Failed to move to DLQ: ${error.message}`);
+  }
+
+  // Update main queue status to 'dead_letter'
+  await sbAdmin
+    .from("order_queue")
+    .update({ status: "dead_letter", last_error: errorMessage })
+    .eq("order_id", orderId);
+
+  // Update order status to indicate failure
+  await sbAdmin
+    .from("orders")
+    .update({ status: "failed" })
+    .eq("id", orderId);
+
+  console.log(`Order ${orderId} successfully moved to dead-letter queue`);
+}
+
 async function generateSignedUrl(zipKey: string): Promise<string> {
   const r = await fetch(
     `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/sign/orders/${zipKey}?download=1`,
@@ -146,6 +185,8 @@ serve(async (req) => {
   }
 
   let orderId: string | undefined;
+  let payload: Record<string, unknown> | undefined;
+  let retryCount = 0;
 
   try {
     const { ok, body } = await verify(req);
@@ -157,14 +198,6 @@ serve(async (req) => {
       });
     }
 
-    let payload: {
-      order_id: string;
-      order_token: string;
-      email: string;
-      results: string[];
-      zip_key: string;
-    };
-
     try {
       payload = JSON.parse(body);
     } catch {
@@ -175,7 +208,13 @@ serve(async (req) => {
       });
     }
 
-    const { order_id, order_token, results, zip_key, email } = payload;
+    const { order_id, order_token, results, zip_key, email } = payload as {
+      order_id: string;
+      order_token: string;
+      email: string;
+      results: string[];
+      zip_key: string;
+    };
     orderId = order_id;
 
     // Validate required fields
@@ -187,7 +226,16 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Processing finalize-order for order_id: ${order_id}, results: ${results.length} files`);
+    // Get current retry count from queue
+    const { data: queueEntry } = await sbAdmin
+      .from("order_queue")
+      .select("attempts")
+      .eq("order_id", order_id)
+      .maybeSingle();
+    
+    retryCount = queueEntry?.attempts || 0;
+
+    console.log(`Processing finalize-order for order_id: ${order_id}, results: ${results.length} files, attempt: ${retryCount + 1}`);
 
     // Update order status with retry
     await retryWithBackoff(() => updateOrderStatus(order_id, results));
@@ -210,6 +258,26 @@ serve(async (req) => {
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     console.error(`finalize-order failed: ${errorMessage}`, err);
+
+    // Check if we've exceeded max retries - move to DLQ
+    if (orderId && payload && retryCount >= MAX_RETRIES - 1) {
+      try {
+        await moveToDeadLetterQueue(orderId, payload, errorMessage, retryCount + 1);
+        return new Response(
+          JSON.stringify({ 
+            error: "Moved to dead-letter queue", 
+            details: errorMessage,
+            dlq: true 
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      } catch (dlqErr) {
+        console.error("Failed to move to DLQ:", dlqErr);
+      }
+    }
 
     // Update queue status to failed if we have the order_id
     if (orderId) {
