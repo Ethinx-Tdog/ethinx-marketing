@@ -8,6 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Existing package price IDs
 const PRICE_MAP: Record<string, string> = {
   starter: "price_1Sn99qIik4hNc65MeXyOPCav",
   professional: "price_1Sn9FfIik4hNc65MloNhA1cw",
@@ -38,6 +39,22 @@ const PRICE_AMOUNTS: Record<string, number> = {
   rush_3h: 2500,
 };
 
+// Credit pack configurations
+const CREDIT_PACKS: Record<string, { credits: number; price: number }> = {
+  pack_10: { credits: 10, price: 1500 },
+  pack_25: { credits: 25, price: 3000 },
+  pack_100: { credits: 100, price: 9000 },
+  pack_500: { credits: 500, price: 40000 },
+};
+
+// Add-on configurations
+const ADD_ONS: Record<string, { name: string; price: number }> = {
+  priority: { name: "Priority Processing", price: 999 },
+  detailed_report: { name: "Detailed Analysis", price: 1499 },
+  export: { name: "Excel Export", price: 499 },
+  api_access: { name: "API Access", price: 2999 },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,80 +65,284 @@ serve(async (req) => {
   }
 
   try {
-    const { email, package_name = "starter", upsell_ids, promo_code, source_page } = await req.json();
+    const body = await req.json();
+    const { type } = body;
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      throw new Error("Valid email is required");
+    // Handle credit pack purchases
+    if (type === "credit_pack") {
+      return await handleCreditPackPurchase(body, req);
     }
 
-    if (!PRICE_MAP[package_name]) {
-      throw new Error("Invalid package selected");
+    // Handle enhanced checkout with plan + add-ons
+    if (body.order_data || body.plan_id) {
+      return await handleEnhancedCheckout(body);
     }
 
-    // Build line items
-    const lineItems = [{ price: PRICE_MAP[package_name], quantity: 1 }];
-    const validUpsells: string[] = [];
-
-    if (upsell_ids && Array.isArray(upsell_ids)) {
-      for (const upsellId of upsell_ids) {
-        if (PRICE_MAP[upsellId]) {
-          lineItems.push({ price: PRICE_MAP[upsellId], quantity: 1 });
-          validUpsells.push(upsellId);
-        }
-      }
-    }
-
-    // Calculate total
-    let totalCents = PRICE_AMOUNTS[package_name] || 0;
-    for (const upsellId of validUpsells) {
-      totalCents += PRICE_AMOUNTS[upsellId] || 0;
-    }
-
-    // Create order
-    const { data: order, error: orderError } = await sbAdmin
-      .from("orders")
-      .insert({
-        email,
-        package_name,
-        photo_count: PACKAGE_PHOTOS[package_name] || 0,
-        amount_cents: totalCents,
-        currency: "aud",
-        status: "pending",
-        promo_code: promo_code || null,
-        source_page: source_page || null,
-      })
-      .select()
-      .single();
-
-    if (orderError) throw new Error("Failed to create order");
-
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      customer_email: email,
-      line_items: lineItems,
-      allow_promotion_codes: true,
-      metadata: {
-        order_id: order.id,
-        order_token: order.order_token,
-        package_name,
-        upsell_ids: validUpsells.join(","),
-      },
-      success_url: `${env.SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${env.SITE_URL}/checkout/cancel`,
-    });
-
-    await sbAdmin.from("orders").update({ stripe_session_id: session.id }).eq("id", order.id);
-
-    return new Response(
-      JSON.stringify({ url: session.url, order_token: order.order_token }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Default: handle legacy package checkout
+    return await handleLegacyCheckout(body);
   } catch (error) {
     const message = error instanceof Error ? error.message : "An error occurred";
+    console.error("Checkout error:", message);
     return new Response(
       JSON.stringify({ error: message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     );
   }
 });
+
+// Credit pack purchase handler
+async function handleCreditPackPurchase(
+  body: {
+    credit_pack_id: string;
+    credits?: number;
+    success_url?: string;
+    cancel_url?: string;
+  },
+  req: Request
+) {
+  const { credit_pack_id, success_url, cancel_url } = body;
+
+  const creditPack = CREDIT_PACKS[credit_pack_id];
+  if (!creditPack) {
+    throw new Error("Invalid credit pack selected");
+  }
+
+  // Get user from auth header if available
+  const authHeader = req.headers.get("Authorization") || "";
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+
+  if (authHeader) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData } = await sbAdmin.auth.getUser(token);
+    if (userData?.user) {
+      userId = userData.user.id;
+      userEmail = userData.user.email || null;
+    }
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer_email: userEmail || undefined,
+    line_items: [
+      {
+        price_data: {
+          currency: "aud",
+          product_data: {
+            name: `${creditPack.credits} Credits`,
+            description: `Purchase ${creditPack.credits} credits for use on any service`,
+          },
+          unit_amount: creditPack.price,
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      type: "credit_purchase",
+      user_id: userId || "",
+      credits: String(creditPack.credits),
+      credit_pack_id,
+    },
+    success_url: success_url || `${env.SITE_URL}/credits/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: cancel_url || `${env.SITE_URL}/credits`,
+  });
+
+  return new Response(
+    JSON.stringify({ url: session.url, session_id: session.id }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+// Enhanced checkout with plans + add-ons
+async function handleEnhancedCheckout(body: {
+  order_data?: Record<string, unknown>;
+  plan_id?: string;
+  add_on_ids?: string[];
+  email?: string;
+  success_url?: string;
+  cancel_url?: string;
+}) {
+  const { order_data, plan_id, add_on_ids, email, success_url, cancel_url } = body;
+
+  // Build line items
+  const lineItems: Array<{ price_data: unknown; quantity: number }> = [];
+  let totalCents = 0;
+
+  // Get plan from database
+  if (plan_id || order_data?.plan_id) {
+    const targetPlanId = plan_id || (order_data?.plan_id as string);
+    const { data: plan } = await sbAdmin
+      .from("pricing_plans")
+      .select("*")
+      .eq("id", targetPlanId)
+      .single();
+
+    if (plan) {
+      lineItems.push({
+        price_data: {
+          currency: "aud",
+          product_data: {
+            name: plan.name,
+            description: plan.description || undefined,
+          },
+          unit_amount: plan.price_cents,
+        },
+        quantity: 1,
+      });
+      totalCents += plan.price_cents;
+    }
+  }
+
+  // Add add-ons
+  const validAddOns: string[] = [];
+  if (add_on_ids && Array.isArray(add_on_ids)) {
+    for (const addOnId of add_on_ids) {
+      const addOn = ADD_ONS[addOnId];
+      if (addOn) {
+        lineItems.push({
+          price_data: {
+            currency: "aud",
+            product_data: {
+              name: `Add-on: ${addOn.name}`,
+            },
+            unit_amount: addOn.price,
+          },
+          quantity: 1,
+        });
+        totalCents += addOn.price;
+        validAddOns.push(addOnId);
+      }
+    }
+  }
+
+  if (lineItems.length === 0) {
+    throw new Error("No valid items in checkout");
+  }
+
+  // Get email
+  const customerEmail = email || (order_data?.email as string);
+  if (!customerEmail) {
+    throw new Error("Email is required");
+  }
+
+  // Create order record
+  const { data: order, error: orderError } = await sbAdmin
+    .from("orders")
+    .insert({
+      email: customerEmail,
+      plan_id: plan_id || (order_data?.plan_id as string) || null,
+      amount_cents: totalCents,
+      currency: "aud",
+      status: "pending",
+      user_id: (order_data?.user_id as string) || null,
+    })
+    .select()
+    .single();
+
+  if (orderError) {
+    console.error("Order creation error:", orderError);
+    throw new Error("Failed to create order");
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer_email: customerEmail,
+    line_items: lineItems,
+    allow_promotion_codes: true,
+    metadata: {
+      type: "order",
+      order_id: order.id,
+      order_token: order.order_token,
+      plan_id: plan_id || (order_data?.plan_id as string) || "",
+      add_ons: validAddOns.join(","),
+    },
+    success_url: success_url || `${env.SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: cancel_url || `${env.SITE_URL}/checkout/cancel`,
+  });
+
+  await sbAdmin.from("orders").update({ stripe_session_id: session.id }).eq("id", order.id);
+
+  return new Response(
+    JSON.stringify({ url: session.url, order_token: order.order_token, session_id: session.id }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+// Legacy checkout handler (original flow)
+async function handleLegacyCheckout(body: {
+  email: string;
+  package_name?: string;
+  upsell_ids?: string[];
+  promo_code?: string;
+  source_page?: string;
+}) {
+  const { email, package_name = "starter", upsell_ids, promo_code, source_page } = body;
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Valid email is required");
+  }
+
+  if (!PRICE_MAP[package_name]) {
+    throw new Error("Invalid package selected");
+  }
+
+  // Build line items
+  const lineItems = [{ price: PRICE_MAP[package_name], quantity: 1 }];
+  const validUpsells: string[] = [];
+
+  if (upsell_ids && Array.isArray(upsell_ids)) {
+    for (const upsellId of upsell_ids) {
+      if (PRICE_MAP[upsellId]) {
+        lineItems.push({ price: PRICE_MAP[upsellId], quantity: 1 });
+        validUpsells.push(upsellId);
+      }
+    }
+  }
+
+  // Calculate total
+  let totalCents = PRICE_AMOUNTS[package_name] || 0;
+  for (const upsellId of validUpsells) {
+    totalCents += PRICE_AMOUNTS[upsellId] || 0;
+  }
+
+  // Create order
+  const { data: order, error: orderError } = await sbAdmin
+    .from("orders")
+    .insert({
+      email,
+      package_name,
+      photo_count: PACKAGE_PHOTOS[package_name] || 0,
+      amount_cents: totalCents,
+      currency: "aud",
+      status: "pending",
+      promo_code: promo_code || null,
+      source_page: source_page || null,
+    })
+    .select()
+    .single();
+
+  if (orderError) throw new Error("Failed to create order");
+
+  // Create checkout session
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer_email: email,
+    line_items: lineItems,
+    allow_promotion_codes: true,
+    metadata: {
+      order_id: order.id,
+      order_token: order.order_token,
+      package_name,
+      upsell_ids: validUpsells.join(","),
+    },
+    success_url: `${env.SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${env.SITE_URL}/checkout/cancel`,
+  });
+
+  await sbAdmin.from("orders").update({ stripe_session_id: session.id }).eq("id", order.id);
+
+  return new Response(
+    JSON.stringify({ url: session.url, order_token: order.order_token }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
