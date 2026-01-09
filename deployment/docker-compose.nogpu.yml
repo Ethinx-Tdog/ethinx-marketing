@@ -1,0 +1,12 @@
+# ============================================
+# Ethinx Stack - No GPU Override
+# ============================================
+# Use this file for systems without NVIDIA GPU:
+#   docker compose -f docker-compose.yml -f docker-compose.nogpu.yml up -d
+# ============================================
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations: {}

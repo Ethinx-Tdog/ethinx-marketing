@@ -1,4 +1,6 @@
-version: '3.8'
+# ============================================
+# Ethinx Open-Source Stack - Docker Compose
+# ============================================
 
 services:
   # ============================================
@@ -63,6 +65,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    # GPU support - use docker-compose.nogpu.yml override for non-GPU systems
     deploy:
       resources:
         reservations:
@@ -107,12 +110,13 @@ services:
       - WHISPER_URL=http://whisper:9000
       - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-4}
       - WORKER_MAX_RETRIES=${WORKER_MAX_RETRIES:-3}
-      # Supabase/Lovable callback configuration
       - SUPABASE_URL=${SUPABASE_URL:-https://ywaseswwmlxjkfpnwaou.supabase.co}
       - WORKER_API_KEY=${WORKER_API_KEY}
     depends_on:
-      - redis
-      - ollama
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -138,8 +142,10 @@ services:
       - POSTAL_WEB_HOST=${SERVER_IP}
       - POSTAL_WEB_PORT=5000
     depends_on:
-      - postal-db
-      - postal-redis
+      postal-db:
+        condition: service_healthy
+      postal-redis:
+        condition: service_started
 
   postal-db:
     image: mariadb:10.11
@@ -150,6 +156,12 @@ services:
       - MYSQL_DATABASE=postal
     volumes:
       - postal-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   postal-redis:
     image: redis:7-alpine
@@ -157,6 +169,11 @@ services:
     restart: unless-stopped
     volumes:
       - postal-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # ============================================
   # Uptime Kuma - Monitoring Dashboard
@@ -191,11 +208,16 @@ services:
       - certbot-webroot:/var/www/certbot:ro
       - certbot-certs:/etc/letsencrypt:ro
     depends_on:
-      - piper
-      - whisper
-      - ollama
-      - worker
-      - uptime-kuma
+      piper:
+        condition: service_healthy
+      whisper:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+      uptime-kuma:
+        condition: service_healthy
 
   # ============================================
   # Certbot - Let's Encrypt SSL
@@ -222,4 +244,4 @@ volumes:
 
 networks:
   default:
-    name: openstack-network
+    name: ethinx-network
