@@ -51,22 +51,11 @@ serve(async (req) => {
         .select("email")
         .eq("order_id", body.order_id)
         .maybeSingle();
-      
-      if (!emailData?.email) {
-        // Fallback: check legacy email column (for migration period)
-        const { data: legacyOrder } = await sbAdmin
-          .from("orders")
-          .select("email")
-          .eq("id", body.order_id)
-          .maybeSingle();
-        toEmail = legacyOrder?.email;
-      } else {
-        toEmail = emailData.email;
-      }
-    }
 
-    if (!toEmail) {
-      throw new Error(`No email found for order: ${body.order_id}`);
+      if (!emailData?.email) {
+        throw new Error(`No email found for order: ${body.order_id}`);
+      }
+      toEmail = emailData.email;
     }
 
     let subject: string;
@@ -115,7 +104,7 @@ serve(async (req) => {
         throw new Error(`Unknown email type: ${body.type}`);
     }
 
-    await sendEmail(toEmail, subject, html);
+    await sendEmail(toEmail!, subject, html);
 
     return new Response(
       JSON.stringify({ success: true, sent: true }),

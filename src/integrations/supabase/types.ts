@@ -309,7 +309,6 @@ export type Database = {
           completed_at: string | null
           created_at: string
           currency: string
-          email: string
           id: string
           order_token: string
           package_name: string | null
@@ -334,7 +333,6 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           currency?: string
-          email: string
           id?: string
           order_token?: string
           package_name?: string | null
@@ -359,7 +357,6 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           currency?: string
-          email?: string
           id?: string
           order_token?: string
           package_name?: string | null

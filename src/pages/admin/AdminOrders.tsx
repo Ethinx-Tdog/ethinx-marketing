@@ -52,7 +52,7 @@ import { cn } from "@/lib/utils";
 interface Order {
   id: string;
   order_token: string;
-  email: string;
+  email?: string;
   package_name: string;
   photo_count: number;
   amount_cents: number;
@@ -95,7 +95,7 @@ export default function AdminOrders() {
     try {
       let query = supabase
         .from("orders")
-        .select("*")
+        .select("*, order_emails(email)")
         .order("created_at", { ascending: false });
 
       if (statusFilter !== "all") {
@@ -116,7 +116,14 @@ export default function AdminOrders() {
       const { data, error } = await query;
 
       if (error) throw error;
-      setOrders((data as Order[]) || []);
+      
+      // Transform data to flatten the joined email
+      const ordersWithEmail = (data || []).map((order) => ({
+        ...order,
+        email: (order.order_emails as { email: string } | null)?.email || undefined,
+      })) as unknown as Order[];
+      
+      setOrders(ordersWithEmail);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
     } finally {
@@ -168,9 +175,9 @@ export default function AdminOrders() {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      order.email.toLowerCase().includes(query) ||
+      (order.email?.toLowerCase().includes(query) ?? false) ||
       order.order_token.toLowerCase().includes(query) ||
-      order.package_name?.toLowerCase().includes(query)
+      (order.package_name?.toLowerCase().includes(query) ?? false)
     );
   });
 
@@ -515,7 +522,7 @@ export default function AdminOrders() {
                         {order.order_token.slice(0, 8)}
                       </code>
                     </TableCell>
-                    <TableCell className="font-medium">{order.email}</TableCell>
+                    <TableCell className="font-medium">{order.email || "—"}</TableCell>
                     <TableCell>
                       <span className="capitalize">{order.package_name || "—"}</span>
                       {order.photo_count > 0 && (
