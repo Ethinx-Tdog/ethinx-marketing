@@ -545,7 +545,6 @@ export type Database = {
           orders_count: number | null
           referral_code: string | null
           referred_by: string | null
-          role: string | null
           total_spent_cents: number | null
           updated_at: string | null
           user_id: string
@@ -561,7 +560,6 @@ export type Database = {
           orders_count?: number | null
           referral_code?: string | null
           referred_by?: string | null
-          role?: string | null
           total_spent_cents?: number | null
           updated_at?: string | null
           user_id: string
@@ -577,7 +575,6 @@ export type Database = {
           orders_count?: number | null
           referral_code?: string | null
           referred_by?: string | null
-          role?: string | null
           total_spent_cents?: number | null
           updated_at?: string | null
           user_id?: string

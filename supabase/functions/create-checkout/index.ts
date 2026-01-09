@@ -2,11 +2,14 @@ import { serve } from "../_shared/deps.ts";
 import { sbAdmin } from "../_shared/sb.ts";
 import { stripe } from "../_shared/stripe.ts";
 import { env } from "../_shared/env.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { 
+  validateCheckoutInput, 
+  isValidEmail, 
+  checkRateLimit, 
+  getClientIdentifier,
+  isNonEmptyString 
+} from "../_shared/validation.ts";
 
 // Existing package price IDs
 const PRICE_MAP: Record<string, string> = {
@@ -56,30 +59,64 @@ const ADD_ONS: Record<string, { name: string; price: number }> = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  // Handle CORS
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
 
   try {
+    // Rate limiting: 5 checkout attempts per minute per IP
+    const clientId = getClientIdentifier(req);
+    const rateLimit = checkRateLimit(`checkout:${clientId}`, { 
+      windowMs: 60000, 
+      maxRequests: 5 
+    });
+    
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Too many checkout attempts. Please wait a moment." }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000))
+          } 
+        }
+      );
+    }
+
     const body = await req.json();
+    
+    // Validate basic input structure
+    const validation = validateCheckoutInput(body);
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({ error: "Invalid input", details: validation.errors }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
     const { type } = body;
 
     // Handle credit pack purchases
     if (type === "credit_pack") {
-      return await handleCreditPackPurchase(body, req);
+      return await handleCreditPackPurchase(body, req, corsHeaders);
     }
 
     // Handle enhanced checkout with plan + add-ons
     if (body.order_data || body.plan_id) {
-      return await handleEnhancedCheckout(body);
+      return await handleEnhancedCheckout(body, corsHeaders);
     }
 
     // Default: handle legacy package checkout
-    return await handleLegacyCheckout(body);
+    return await handleLegacyCheckout(body, corsHeaders);
   } catch (error) {
     const message = error instanceof Error ? error.message : "An error occurred";
     console.error("Checkout error:", message);
@@ -98,9 +135,15 @@ async function handleCreditPackPurchase(
     success_url?: string;
     cancel_url?: string;
   },
-  req: Request
+  req: Request,
+  corsHeaders: Record<string, string>
 ) {
   const { credit_pack_id, success_url, cancel_url } = body;
+
+  // Validate credit pack ID
+  if (!isNonEmptyString(credit_pack_id, 50)) {
+    throw new Error("Invalid credit pack ID");
+  }
 
   const creditPack = CREDIT_PACKS[credit_pack_id];
   if (!creditPack) {
@@ -154,14 +197,17 @@ async function handleCreditPackPurchase(
 }
 
 // Enhanced checkout with plans + add-ons
-async function handleEnhancedCheckout(body: {
-  order_data?: Record<string, unknown>;
-  plan_id?: string;
-  add_on_ids?: string[];
-  email?: string;
-  success_url?: string;
-  cancel_url?: string;
-}) {
+async function handleEnhancedCheckout(
+  body: {
+    order_data?: Record<string, unknown>;
+    plan_id?: string;
+    add_on_ids?: string[];
+    email?: string;
+    success_url?: string;
+    cancel_url?: string;
+  },
+  corsHeaders: Record<string, string>
+) {
   const { order_data, plan_id, add_on_ids, email, success_url, cancel_url } = body;
 
   // Build line items
@@ -171,6 +217,12 @@ async function handleEnhancedCheckout(body: {
   // Get plan from database
   if (plan_id || order_data?.plan_id) {
     const targetPlanId = plan_id || (order_data?.plan_id as string);
+    
+    // Validate plan ID format
+    if (!isNonEmptyString(targetPlanId, 100)) {
+      throw new Error("Invalid plan ID");
+    }
+    
     const { data: plan } = await sbAdmin
       .from("pricing_plans")
       .select("*")
@@ -197,6 +249,7 @@ async function handleEnhancedCheckout(body: {
   const validAddOns: string[] = [];
   if (add_on_ids && Array.isArray(add_on_ids)) {
     for (const addOnId of add_on_ids) {
+      if (!isNonEmptyString(addOnId, 50)) continue;
       const addOn = ADD_ONS[addOnId];
       if (addOn) {
         lineItems.push({
@@ -221,8 +274,8 @@ async function handleEnhancedCheckout(body: {
 
   // Get email
   const customerEmail = email || (order_data?.email as string);
-  if (!customerEmail) {
-    throw new Error("Email is required");
+  if (!isValidEmail(customerEmail)) {
+    throw new Error("Valid email is required");
   }
 
   // Create order record
@@ -269,20 +322,23 @@ async function handleEnhancedCheckout(body: {
 }
 
 // Legacy checkout handler (original flow)
-async function handleLegacyCheckout(body: {
-  email: string;
-  package_name?: string;
-  upsell_ids?: string[];
-  promo_code?: string;
-  source_page?: string;
-}) {
+async function handleLegacyCheckout(
+  body: {
+    email: string;
+    package_name?: string;
+    upsell_ids?: string[];
+    promo_code?: string;
+    source_page?: string;
+  },
+  corsHeaders: Record<string, string>
+) {
   const { email, package_name = "starter", upsell_ids, promo_code, source_page } = body;
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isValidEmail(email)) {
     throw new Error("Valid email is required");
   }
 
-  if (!PRICE_MAP[package_name]) {
+  if (!isNonEmptyString(package_name, 50) || !PRICE_MAP[package_name]) {
     throw new Error("Invalid package selected");
   }
 
@@ -292,7 +348,7 @@ async function handleLegacyCheckout(body: {
 
   if (upsell_ids && Array.isArray(upsell_ids)) {
     for (const upsellId of upsell_ids) {
-      if (PRICE_MAP[upsellId]) {
+      if (isNonEmptyString(upsellId, 50) && PRICE_MAP[upsellId]) {
         lineItems.push({ price: PRICE_MAP[upsellId], quantity: 1 });
         validUpsells.push(upsellId);
       }
@@ -305,6 +361,11 @@ async function handleLegacyCheckout(body: {
     totalCents += PRICE_AMOUNTS[upsellId] || 0;
   }
 
+  // Validate promo code if provided
+  const sanitizedPromoCode = promo_code && isNonEmptyString(promo_code, 50) 
+    ? promo_code.toUpperCase().replace(/[^A-Z0-9_-]/g, "") 
+    : null;
+
   // Create order
   const { data: order, error: orderError } = await sbAdmin
     .from("orders")
@@ -315,8 +376,8 @@ async function handleLegacyCheckout(body: {
       amount_cents: totalCents,
       currency: "aud",
       status: "pending",
-      promo_code: promo_code || null,
-      source_page: source_page || null,
+      promo_code: sanitizedPromoCode,
+      source_page: source_page?.slice(0, 255) || null,
     })
     .select()
     .single();

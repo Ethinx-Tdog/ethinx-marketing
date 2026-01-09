@@ -41,3 +41,15 @@ verify_jwt = false
 
 [functions.elevenlabs-scribe-token]
 verify_jwt = false
+
+[functions.validate-promo]
+verify_jwt = false
+
+[functions.get-signed-url]
+verify_jwt = false
+
+[functions.upload-photo]
+verify_jwt = false
+
+[functions.admin-role-notify]
+verify_jwt = false

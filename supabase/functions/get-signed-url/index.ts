@@ -1,20 +1,48 @@
 import { serve } from "../_shared/deps.ts";
 import { env } from "../_shared/env.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { sbAdmin } from "../_shared/sb.ts";
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { 
+  containsPathTraversal, 
+  isValidStorageKey, 
+  checkRateLimit, 
+  getClientIdentifier 
+} from "../_shared/validation.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  // Handle CORS
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+  
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
 
   try {
+    // Rate limiting: 30 requests per minute per IP
+    const clientId = getClientIdentifier(req);
+    const rateLimit = checkRateLimit(`signed-url:${clientId}`, { 
+      windowMs: 60000, 
+      maxRequests: 30 
+    });
+    
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Try again later." }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000))
+          } 
+        }
+      );
+    }
+
     const url = new URL(req.url);
     const key = url.searchParams.get("key");
 
+    // Validate key parameter
     if (!key) {
       return new Response(
         JSON.stringify({ error: "Missing key parameter" }),
@@ -22,6 +50,78 @@ serve(async (req) => {
       );
     }
 
+    // CRITICAL: Path traversal protection
+    if (containsPathTraversal(key)) {
+      console.error(`[SECURITY] Path traversal attempt blocked: ${key}`);
+      return new Response(
+        JSON.stringify({ error: "Invalid key format" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate key format (should match pattern: prefix/order_token/filename)
+    if (!isValidStorageKey(key)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid key format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Extract order_token from key path (format: prefix/order_token/filename)
+    const keyParts = key.split("/");
+    if (keyParts.length < 2) {
+      return new Response(
+        JSON.stringify({ error: "Invalid key structure" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const orderToken = keyParts[1];
+    
+    // Verify the order exists and get ownership info
+    const { data: order, error: orderError } = await sbAdmin
+      .from("orders")
+      .select("id, user_id, email, status")
+      .eq("order_token", orderToken)
+      .single();
+
+    if (orderError || !order) {
+      return new Response(
+        JSON.stringify({ error: "Order not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if user is authenticated and owns this order
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData } = await sbAdmin.auth.getUser(token);
+      
+      if (userData?.user) {
+        // Authenticated user - verify they own this order
+        if (order.user_id && order.user_id !== userData.user.id) {
+          // Check if user is admin
+          const { data: roleData } = await sbAdmin
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userData.user.id)
+            .eq("role", "admin")
+            .single();
+          
+          if (!roleData) {
+            return new Response(
+              JSON.stringify({ error: "Access denied" }),
+              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+      }
+    }
+    // Note: For guest orders (no user_id), we allow access with valid order_token
+    // This is intentional for the guest checkout flow
+
+    // Generate signed URL
     const r = await fetch(
       `${env.SUPABASE_URL}/storage/v1/object/sign/orders/${key}?download=1`,
       {
@@ -35,6 +135,7 @@ serve(async (req) => {
     );
 
     if (!r.ok) {
+      console.error(`[STORAGE] Failed to generate signed URL: ${r.status}`);
       return new Response(
         JSON.stringify({ error: "Failed to generate signed URL" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -49,6 +150,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error generating URL";
+    console.error(`[ERROR] get-signed-url: ${message}`);
     return new Response(
       JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
