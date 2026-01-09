@@ -3,7 +3,7 @@ FastAPI Worker - Job Queue Processor
 Replaces Modal compute for AI headshot processing
 
 Connects to Lovable Edge Functions via HMAC-signed callbacks.
-Includes real-time dashboard for monitoring.
+Includes real-time dashboard for monitoring with authentication.
 """
 
 import os
@@ -14,15 +14,20 @@ import asyncio
 import logging
 import platform
 import psutil
+import secrets
+import base64
 from datetime import datetime, timedelta
 from typing import Optional
 from contextlib import asynccontextmanager
 from collections import deque
+from functools import wraps
 
 import httpx
 import redis.asyncio as redis
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Header, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Header, Request, Depends, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 
 # Configuration
@@ -40,6 +45,13 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "https://ywaseswwmlxjkfpnwaou.supabase.
 WORKER_API_KEY = os.getenv("WORKER_API_KEY", "")
 FINALIZE_ORDER_URL = f"{SUPABASE_URL}/functions/v1/finalize-order"
 
+# Dashboard authentication configuration
+DASHBOARD_USERNAME = os.getenv("DASHBOARD_USERNAME", "admin")
+DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "")  # Required!
+DASHBOARD_API_KEY = os.getenv("DASHBOARD_API_KEY", "")  # Optional API key auth
+SESSION_SECRET = os.getenv("SESSION_SECRET", secrets.token_hex(32))
+SESSION_DURATION_HOURS = int(os.getenv("SESSION_DURATION_HOURS", "24"))
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -56,6 +68,129 @@ METRICS = {
 
 # Redis connection pool
 redis_pool: Optional[redis.Redis] = None
+
+# Session storage (in production, use Redis)
+active_sessions: dict = {}
+
+# HTTP Basic Security
+security = HTTPBasic()
+
+
+# ============================================
+# Authentication Functions
+# ============================================
+
+def generate_session_token() -> str:
+    """Generate a secure session token"""
+    return secrets.token_urlsafe(32)
+
+
+def create_session(username: str) -> str:
+    """Create a new session and return the token"""
+    token = generate_session_token()
+    expiry = datetime.utcnow() + timedelta(hours=SESSION_DURATION_HOURS)
+    active_sessions[token] = {
+        "username": username,
+        "created_at": datetime.utcnow().isoformat(),
+        "expires_at": expiry.isoformat()
+    }
+    logger.info(f"Created session for user: {username}")
+    return token
+
+
+def validate_session(token: str) -> Optional[dict]:
+    """Validate a session token"""
+    if not token or token not in active_sessions:
+        return None
+    
+    session = active_sessions[token]
+    expiry = datetime.fromisoformat(session["expires_at"])
+    
+    if datetime.utcnow() > expiry:
+        del active_sessions[token]
+        return None
+    
+    return session
+
+
+def verify_basic_auth(credentials: HTTPBasicCredentials) -> bool:
+    """Verify basic auth credentials"""
+    if not DASHBOARD_PASSWORD:
+        logger.warning("DASHBOARD_PASSWORD not set! Authentication disabled.")
+        return True  # Allow access if password not configured (development only)
+    
+    correct_username = secrets.compare_digest(
+        credentials.username.encode("utf8"),
+        DASHBOARD_USERNAME.encode("utf8")
+    )
+    correct_password = secrets.compare_digest(
+        credentials.password.encode("utf8"),
+        DASHBOARD_PASSWORD.encode("utf8")
+    )
+    return correct_username and correct_password
+
+
+def verify_api_key(api_key: str) -> bool:
+    """Verify API key for programmatic access"""
+    if not DASHBOARD_API_KEY:
+        return False
+    return secrets.compare_digest(api_key, DASHBOARD_API_KEY)
+
+
+async def get_current_user(
+    request: Request,
+    x_api_key: Optional[str] = Header(None),
+    x_session_token: Optional[str] = Header(None)
+) -> Optional[str]:
+    """
+    Authenticate request via:
+    1. X-API-Key header
+    2. X-Session-Token header  
+    3. Session cookie
+    """
+    # Check API key first
+    if x_api_key and verify_api_key(x_api_key):
+        return "api_key_user"
+    
+    # Check session token header
+    if x_session_token:
+        session = validate_session(x_session_token)
+        if session:
+            return session["username"]
+    
+    # Check session cookie
+    session_cookie = request.cookies.get("dashboard_session")
+    if session_cookie:
+        session = validate_session(session_cookie)
+        if session:
+            return session["username"]
+    
+    return None
+
+
+def require_auth(func):
+    """Decorator to require authentication for endpoints"""
+    @wraps(func)
+    async def wrapper(request: Request, *args, **kwargs):
+        x_api_key = request.headers.get("x-api-key")
+        x_session_token = request.headers.get("x-session-token")
+        
+        user = await get_current_user(request, x_api_key, x_session_token)
+        
+        if not user:
+            # Check if no password is set (development mode)
+            if not DASHBOARD_PASSWORD:
+                return await func(request, *args, **kwargs)
+            
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication required",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        
+        return await func(request, *args, **kwargs)
+    
+    return wrapper
 
 
 class JobPayload(BaseModel):
@@ -261,18 +396,108 @@ async def queue_stats():
 
 
 # ============================================
-# Dashboard Endpoints
+# Authentication Endpoints
+# ============================================
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, error: Optional[str] = None):
+    """Serve login page"""
+    # Check if already authenticated
+    user = await get_current_user(request)
+    if user:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    # If no password configured, redirect to dashboard
+    if not DASHBOARD_PASSWORD:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    return LOGIN_HTML.replace("{{ERROR}}", f'<p class="text-red-400 text-sm mb-4">{error}</p>' if error else "")
+
+
+@app.post("/login")
+async def login(request: Request, response: Response):
+    """Handle login form submission"""
+    form = await request.form()
+    username = form.get("username", "")
+    password = form.get("password", "")
+    
+    # Verify credentials
+    if not DASHBOARD_PASSWORD:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    if not secrets.compare_digest(username, DASHBOARD_USERNAME) or \
+       not secrets.compare_digest(password, DASHBOARD_PASSWORD):
+        logger.warning(f"Failed login attempt for user: {username}")
+        return RedirectResponse(url="/login?error=Invalid+credentials", status_code=303)
+    
+    # Create session
+    token = create_session(username)
+    
+    # Set cookie and redirect
+    redirect = RedirectResponse(url="/dashboard", status_code=303)
+    redirect.set_cookie(
+        key="dashboard_session",
+        value=token,
+        httponly=True,
+        secure=True,  # Requires HTTPS
+        samesite="lax",
+        max_age=SESSION_DURATION_HOURS * 3600
+    )
+    return redirect
+
+
+@app.get("/logout")
+async def logout(request: Request):
+    """Handle logout"""
+    session_cookie = request.cookies.get("dashboard_session")
+    if session_cookie and session_cookie in active_sessions:
+        del active_sessions[session_cookie]
+    
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie("dashboard_session")
+    return response
+
+
+@app.post("/api/auth/token")
+async def get_auth_token(credentials: HTTPBasicCredentials = Depends(security)):
+    """Get session token via basic auth (for API clients)"""
+    if not verify_basic_auth(credentials):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"}
+        )
+    
+    token = create_session(credentials.username)
+    return {
+        "token": token,
+        "expires_in": SESSION_DURATION_HOURS * 3600,
+        "token_type": "bearer"
+    }
+
+
+# ============================================
+# Dashboard Endpoints (Protected)
 # ============================================
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard():
-    """Serve the monitoring dashboard"""
+async def dashboard(request: Request):
+    """Serve the monitoring dashboard (requires authentication)"""
+    user = await get_current_user(request)
+    
+    if not user and DASHBOARD_PASSWORD:
+        return RedirectResponse(url="/login", status_code=303)
+    
     return DASHBOARD_HTML
 
 
 @app.get("/api/metrics")
-async def get_metrics():
-    """Get comprehensive system and job metrics"""
+async def get_metrics(request: Request):
+    """Get comprehensive system and job metrics (requires authentication)"""
+    user = await get_current_user(request)
+    if not user and DASHBOARD_PASSWORD:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
     uptime = datetime.utcnow() - START_TIME
     
     # System metrics
@@ -338,16 +563,24 @@ async def get_metrics():
 
 
 @app.get("/api/history")
-async def get_job_history(limit: int = 50):
-    """Get recent job history"""
+async def get_job_history(request: Request, limit: int = 50):
+    """Get recent job history (requires authentication)"""
+    user = await get_current_user(request)
+    if not user and DASHBOARD_PASSWORD:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
     history = list(JOB_HISTORY)[-limit:]
     history.reverse()  # Most recent first
     return {"jobs": history, "count": len(history)}
 
 
 @app.get("/api/services")
-async def get_services_status():
-    """Check status of all connected services"""
+async def get_services_status(request: Request):
+    """Check status of all connected services (requires authentication)"""
+    user = await get_current_user(request)
+    if not user and DASHBOARD_PASSWORD:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
     services = {}
     
     # Check Redis
@@ -423,6 +656,68 @@ def format_duration(delta: timedelta) -> str:
     return " ".join(parts)
 
 
+# Login Page HTML Template
+LOGIN_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Ethinx Worker Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-700">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-white">Worker Dashboard</h1>
+            <p class="text-gray-400 mt-2">Sign in to access system metrics</p>
+        </div>
+        
+        {{ERROR}}
+        
+        <form method="POST" action="/login" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                <input 
+                    type="text" 
+                    name="username" 
+                    required
+                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    placeholder="Enter username"
+                >
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                <input 
+                    type="password" 
+                    name="password" 
+                    required
+                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    placeholder="Enter password"
+                >
+            </div>
+            
+            <button 
+                type="submit"
+                class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+            >
+                Sign In
+            </button>
+        </form>
+        
+        <div class="mt-6 text-center text-sm text-gray-500">
+            <p>Protected system - authorized users only</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+
 # Dashboard HTML Template
 DASHBOARD_HTML = """
 <!DOCTYPE html>
@@ -452,11 +747,16 @@ DASHBOARD_HTML = """
                 </h1>
                 <p class="text-gray-400 mt-1" id="server-info">Loading...</p>
             </div>
-            <div class="text-right">
-                <div class="text-sm text-gray-400">Last updated</div>
-                <div class="text-lg font-mono" id="last-update">--:--:--</div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <div class="text-sm text-gray-400">Last updated</div>
+                    <div class="text-lg font-mono" id="last-update">--:--:--</div>
+                </div>
+                <a href="/logout" class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    Logout
+                </a>
             </div>
-        </div>
         
         <!-- Stats Grid -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
