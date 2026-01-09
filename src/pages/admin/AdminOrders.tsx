@@ -296,6 +296,12 @@ export default function AdminOrders() {
                 Promo Analytics
               </Button>
             </Link>
+            <Link to="/admin/dlq">
+              <Button variant="outline" size="sm">
+                <XCircle className="mr-2 h-4 w-4" />
+                DLQ
+              </Button>
+            </Link>
             <Button onClick={exportCSV} variant="outline" size="sm" disabled={isExporting}>
               <Download className={cn("mr-2 h-4 w-4", isExporting && "animate-pulse")} />
               Export CSV
