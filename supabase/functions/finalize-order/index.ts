@@ -149,8 +149,18 @@ async function moveToDeadLetterQueue(
     .update({ status: "failed" })
     .eq("id", orderId);
 
+  // Get customer email from order_emails table
+  let customerEmail = "unknown";
+  const { data: emailData } = await sbAdmin
+    .from("order_emails")
+    .select("email")
+    .eq("order_id", orderId)
+    .maybeSingle();
+  if (emailData?.email) {
+    customerEmail = emailData.email;
+  }
+
   // Send admin notification email
-  const customerEmail = (payload.email as string) || "unknown";
   await sendAdminAlert(
     `⚠️ Order ${orderId.slice(0, 8)} moved to DLQ`,
     tpl.dlqAlert(orderId, customerEmail, errorMessage, retryCount)
@@ -215,19 +225,38 @@ serve(async (req) => {
       });
     }
 
-    const { order_id, order_token, results, zip_key, email } = payload as {
+    const { order_id, order_token, results, zip_key, email: payloadEmail } = payload as {
       order_id: string;
       order_token: string;
-      email: string;
+      email?: string;
       results: string[];
       zip_key: string;
     };
     orderId = order_id;
 
     // Validate required fields
-    if (!order_id || !order_token || !email || !results || !zip_key) {
-      console.error("Missing required fields in payload", { order_id, order_token, email, results: !!results, zip_key });
+    if (!order_id || !order_token || !results || !zip_key) {
+      console.error("Missing required fields in payload", { order_id, order_token, results: !!results, zip_key });
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Get email from order_emails table (secure isolation)
+    let email = payloadEmail;
+    if (!email) {
+      const { data: emailData } = await sbAdmin
+        .from("order_emails")
+        .select("email")
+        .eq("order_id", order_id)
+        .maybeSingle();
+      email = emailData?.email;
+    }
+
+    if (!email) {
+      console.error("No email found for order", { order_id });
+      return new Response(JSON.stringify({ error: "No email found for order" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

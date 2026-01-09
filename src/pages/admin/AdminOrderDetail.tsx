@@ -30,7 +30,7 @@ import { toast } from "sonner";
 interface Order {
   id: string;
   order_token: string;
-  email: string;
+  email?: string;
   package_name: string;
   photo_count: number;
   amount_cents: number;
@@ -68,12 +68,20 @@ export default function AdminOrderDetail() {
     try {
       const { data, error } = await supabase
         .from("orders")
-        .select("*")
+        .select("*, order_emails(email)")
         .eq("id", orderId)
         .maybeSingle();
 
       if (error) throw error;
-      setOrder(data as Order);
+      
+      // Flatten the joined email
+      const orderWithEmail = data ? {
+        ...data,
+        email: (data.order_emails as { email: string } | null)?.email || undefined,
+        order_emails: undefined,
+      } as Order : null;
+      
+      setOrder(orderWithEmail);
     } catch (err) {
       console.error("Failed to fetch order:", err);
       toast.error("Failed to load order");
@@ -171,7 +179,7 @@ export default function AdminOrderDetail() {
               <h1 className="text-xl font-bold text-foreground">
                 Order {order.order_token.slice(0, 8)}
               </h1>
-              <p className="text-sm text-muted-foreground">{order.email}</p>
+              <p className="text-sm text-muted-foreground">{order.email || "No email"}</p>
             </div>
           </div>
           <Badge className={cn("gap-1", statusConfig.bg, statusConfig.color)}>
@@ -236,7 +244,7 @@ export default function AdminOrderDetail() {
               <Mail className="mt-0.5 h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{order.email}</p>
+                <p className="font-medium">{order.email || "—"}</p>
               </div>
             </div>
           </div>
