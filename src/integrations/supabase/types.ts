@@ -540,6 +540,16 @@ export type Database = {
         Returns: boolean
       }
       get_credit_balance: { Args: { p_user_id: string }; Returns: number }
+      get_user_credit_summary: {
+        Args: { p_user_id: string }
+        Returns: {
+          balance: number
+          last_transaction: string
+          monthly_usage: Json
+          total_earned: number
+          total_spent: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
