@@ -98,7 +98,6 @@ When discussing system status:
       },
       body: JSON.stringify({
         model: "openai/gpt-5-mini",
-        temperature: 0.8,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
