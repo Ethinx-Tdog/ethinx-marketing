@@ -31,6 +31,37 @@ export async function sendEmail(to: string, subject: string, html: string) {
   return r.json();
 }
 
+// Slack notification support
+export async function sendSlackAlert(message: string, blocks?: object[]) {
+  const webhookUrl = Deno.env.get("SLACK_WEBHOOK_URL");
+  if (!webhookUrl) {
+    console.log("[SLACK] SLACK_WEBHOOK_URL not configured, skipping");
+    return null;
+  }
+
+  try {
+    const payload: { text: string; blocks?: object[] } = { text: message };
+    if (blocks) payload.blocks = blocks;
+
+    const r = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!r.ok) {
+      console.error(`[SLACK] Failed: ${r.status}`);
+      return null;
+    }
+    
+    console.log(`[SLACK] Alert sent: ${message.slice(0, 50)}...`);
+    return { ok: true };
+  } catch (err) {
+    console.error("[SLACK] Error:", err);
+    return null;
+  }
+}
+
 export const tpl = {
   orderReceived: (order_token: string) =>
     `<h2>We got your order 🎉</h2><p><a href="${env.SITE_URL}/order-status?token=${order_token}">Open your order</a></p>`,
@@ -58,8 +89,13 @@ export const tpl = {
 
 export async function sendAdminAlert(subject: string, html: string) {
   const adminEmail = env.ADMIN_EMAIL;
+  
+  // Send Slack alert (always attempt - will skip if not configured)
+  const slackMessage = `${subject}\n${html.replace(/<[^>]*>/g, '').slice(0, 500)}`;
+  await sendSlackAlert(slackMessage);
+  
   if (!adminEmail) {
-    console.log("ADMIN_EMAIL not configured, skipping admin notification");
+    console.log("ADMIN_EMAIL not configured, skipping email notification");
     return null;
   }
   
