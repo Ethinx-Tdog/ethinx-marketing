@@ -1,0 +1,18 @@
+[Unit]
+Description=Ethinx Stack Health Monitor
+After=ethinx-stack.service
+Requires=ethinx-stack.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ethinx
+ExecStart=/opt/ethinx/health-monitor.sh
+Restart=always
+RestartSec=60
+
+# Run as root to access docker
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
