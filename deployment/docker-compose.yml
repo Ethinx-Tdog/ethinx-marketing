@@ -105,7 +105,11 @@ services:
       - OLLAMA_URL=http://ollama:11434
       - PIPER_URL=http://piper:10200
       - WHISPER_URL=http://whisper:9000
-      - WORKER_CONCURRENCY=4
+      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-4}
+      - WORKER_MAX_RETRIES=${WORKER_MAX_RETRIES:-3}
+      # Supabase/Lovable callback configuration
+      - SUPABASE_URL=${SUPABASE_URL:-https://ywaseswwmlxjkfpnwaou.supabase.co}
+      - WORKER_API_KEY=${WORKER_API_KEY}
     depends_on:
       - redis
       - ollama
