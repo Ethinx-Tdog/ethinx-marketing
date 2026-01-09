@@ -530,19 +530,29 @@ export type Database = {
         Args: {
           p_amount: number
           p_description?: string
-          p_type?: string
+          p_transaction_id?: string
           p_user_id: string
         }
-        Returns: boolean
+        Returns: number
       }
       deduct_credits: {
         Args: { p_amount: number; p_description?: string; p_user_id: string }
         Returns: boolean
       }
+      get_credit_balance: { Args: { p_user_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      transfer_credits: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_from_user_id: string
+          p_to_user_id: string
         }
         Returns: boolean
       }
