@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          subscription_id: string | null
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          subscription_id?: string | null
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          subscription_id?: string | null
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cron_heartbeats: {
         Row: {
           consecutive_failures: number
@@ -203,6 +254,7 @@ export type Database = {
           paid_at: string | null
           photo_count: number | null
           photo_files: string[]
+          plan_id: string | null
           promo_code: string | null
           promo_group: string | null
           promo_variant: string | null
@@ -212,6 +264,7 @@ export type Database = {
           stripe_payment_intent_id: string | null
           stripe_session_id: string | null
           updated_at: string
+          used_credits: number | null
           user_id: string | null
         }
         Insert: {
@@ -226,6 +279,7 @@ export type Database = {
           paid_at?: string | null
           photo_count?: number | null
           photo_files?: string[]
+          plan_id?: string | null
           promo_code?: string | null
           promo_group?: string | null
           promo_variant?: string | null
@@ -235,6 +289,7 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           updated_at?: string
+          used_credits?: number | null
           user_id?: string | null
         }
         Update: {
@@ -249,6 +304,7 @@ export type Database = {
           paid_at?: string | null
           photo_count?: number | null
           photo_files?: string[]
+          plan_id?: string | null
           promo_code?: string | null
           promo_group?: string | null
           promo_variant?: string | null
@@ -258,7 +314,58 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           updated_at?: string
+          used_credits?: number | null
           user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_plans: {
+        Row: {
+          created_at: string | null
+          credits_included: number | null
+          description: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          interval: string | null
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          price_cents: number
+        }
+        Insert: {
+          created_at?: string | null
+          credits_included?: number | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id: string
+          interval?: string | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          price_cents: number
+        }
+        Update: {
+          created_at?: string | null
+          credits_included?: number | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          interval?: string | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          price_cents?: number
         }
         Relationships: []
       }
@@ -305,6 +412,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          interval: string | null
+          metadata: Json | null
+          plan_id: string
+          plan_name: string
+          price_cents: number
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          interval?: string | null
+          metadata?: Json | null
+          plan_id: string
+          plan_name: string
+          price_cents: number
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          interval?: string | null
+          metadata?: Json | null
+          plan_id?: string
+          plan_name?: string
+          price_cents?: number
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_credits: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          id: string
+          last_top_up: string | null
+          total_earned: number | null
+          total_spent: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          last_top_up?: string | null
+          total_earned?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          last_top_up?: string | null
+          total_earned?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
