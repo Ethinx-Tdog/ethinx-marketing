@@ -2,7 +2,18 @@ import { env } from "./env.ts";
 
 const base = "https://api.resend.com/emails";
 
+// Production flag - set to false to disable actual email sending
+const EMAIL_ENABLED = false;
+
 export async function sendEmail(to: string, subject: string, html: string) {
+  // Log all email attempts for debugging
+  console.log(`[EMAIL] To: ${to}, Subject: ${subject}, Enabled: ${EMAIL_ENABLED}`);
+  
+  if (!EMAIL_ENABLED) {
+    console.log(`[EMAIL] DISABLED - Would have sent to ${to}: ${subject}`);
+    return { id: "disabled", to, subject };
+  }
+
   const r = await fetch(base, {
     method: "POST",
     headers: {
