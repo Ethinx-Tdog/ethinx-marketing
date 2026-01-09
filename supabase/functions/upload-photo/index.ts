@@ -67,9 +67,10 @@ serve(async (req) => {
     const { order_token, files } = validation.data!;
 
     // Verify order exists and is in valid state
+    // SECURITY: Only select minimal fields needed - no sensitive data like email
     const { data: order, error } = await sbAdmin
       .from("orders")
-      .select("id, status, email, photo_files, user_id")
+      .select("id, status, photo_files, user_id")
       .eq("order_token", order_token)
       .single();
 

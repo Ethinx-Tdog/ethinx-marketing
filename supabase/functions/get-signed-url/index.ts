@@ -79,9 +79,10 @@ serve(async (req) => {
     const orderToken = keyParts[1];
     
     // Verify the order exists and get ownership info
+    // SECURITY: Only select minimal fields needed for authorization - no sensitive data
     const { data: order, error: orderError } = await sbAdmin
       .from("orders")
-      .select("id, user_id, email, status")
+      .select("id, user_id, status")
       .eq("order_token", orderToken)
       .single();
 
