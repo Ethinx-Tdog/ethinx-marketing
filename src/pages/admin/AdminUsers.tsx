@@ -121,6 +121,41 @@ export default function AdminUsers() {
     }
   };
 
+  const sendRoleNotification = async (targetEmail: string, action: string) => {
+    try {
+      // Fetch the latest audit entry for this action/email
+      const { data: auditEntries } = await supabase
+        .from("admin_audit")
+        .select("id")
+        .eq("action", action)
+        .eq("target_email", targetEmail)
+        .order("ts", { ascending: false })
+        .limit(1);
+
+      if (auditEntries && auditEntries.length > 0) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        if (token) {
+          await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-role-notify`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ audit_id: auditEntries[0].id }),
+            }
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Failed to send notification:", err);
+      // Don't show error to user - notification is secondary
+    }
+  };
+
   const grantAdmin = async () => {
     if (!newAdminEmail.trim()) {
       toast.error("Please enter an email address");
@@ -144,6 +179,10 @@ export default function AdminUsers() {
       }
 
       toast.success(result.message || "Admin access granted");
+      
+      // Send email notification (fire and forget)
+      sendRoleNotification(newAdminEmail.trim(), "grant_admin");
+      
       setNewAdminEmail("");
       setIsDialogOpen(false);
       fetchAdmins();
@@ -172,6 +211,10 @@ export default function AdminUsers() {
       }
 
       toast.success(result.message || "Admin access revoked");
+      
+      // Send email notification (fire and forget)
+      sendRoleNotification(email, "revoke_admin");
+      
       fetchAdmins();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to revoke admin";

@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           action: string
           actor_user_id: string
+          email_sent: boolean | null
+          email_sent_at: string | null
           id: string
           metadata: Json | null
           target_email: string | null
@@ -26,6 +28,8 @@ export type Database = {
         Insert: {
           action: string
           actor_user_id: string
+          email_sent?: boolean | null
+          email_sent_at?: string | null
           id?: string
           metadata?: Json | null
           target_email?: string | null
@@ -34,6 +38,8 @@ export type Database = {
         Update: {
           action?: string
           actor_user_id?: string
+          email_sent?: boolean | null
+          email_sent_at?: string | null
           id?: string
           metadata?: Json | null
           target_email?: string | null
