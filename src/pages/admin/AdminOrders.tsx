@@ -302,6 +302,11 @@ export default function AdminOrders() {
                 DLQ
               </Button>
             </Link>
+            <Link to="/admin/users">
+              <Button variant="outline" size="sm">
+                Users
+              </Button>
+            </Link>
             <Button onClick={exportCSV} variant="outline" size="sm" disabled={isExporting}>
               <Download className={cn("mr-2 h-4 w-4", isExporting && "animate-pulse")} />
               Export CSV
