@@ -1,15 +1,17 @@
 import { useState, useCallback, useRef } from "react";
+import { useScribe, CommitStrategy } from "@elevenlabs/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Volume2, VolumeX, Loader2, Bot, User } from "lucide-react";
+import { Send, Volume2, VolumeX, Loader2, Bot, User, Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
 
 type Message = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+const SCRIBE_TOKEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-scribe-token`;
 
 export function AIVoiceChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -17,7 +19,63 @@ export function AIVoiceChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [isConnecting, setIsConnecting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const scribe = useScribe({
+    modelId: "scribe_v2_realtime",
+    commitStrategy: CommitStrategy.VAD,
+    onCommittedTranscript: (data) => {
+      if (data.text?.trim()) {
+        setInput((prev) => (prev ? `${prev} ${data.text}` : data.text));
+      }
+    },
+  });
+
+  const startListening = useCallback(async () => {
+    if (scribe.isConnected) {
+      scribe.disconnect();
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const response = await fetch(SCRIBE_TOKEN_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get scribe token");
+      }
+
+      const { token } = await response.json();
+
+      if (!token) {
+        throw new Error("No token received");
+      }
+
+      await scribe.connect({
+        token,
+        microphone: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      toast.success("Listening... Speak now!");
+    } catch (error) {
+      console.error("Scribe connection error:", error);
+      toast.error("Failed to start voice input");
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [scribe]);
 
   const playAudio = useCallback(async (text: string) => {
     if (!voiceEnabled || !text.trim()) return;
@@ -95,6 +153,11 @@ export function AIVoiceChat() {
   const sendMessage = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
+    // Stop listening if actively recording
+    if (scribe.isConnected) {
+      scribe.disconnect();
+    }
+
     const userMsg: Message = { role: "user", content: input.trim() };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -161,7 +224,7 @@ export function AIVoiceChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, streamChat, playAudio]);
+  }, [input, isLoading, messages, streamChat, playAudio, scribe]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -255,12 +318,35 @@ export function AIVoiceChat() {
           </div>
         </ScrollArea>
 
+        {/* Live transcript display */}
+        {scribe.isConnected && scribe.partialTranscript && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-md text-sm text-muted-foreground">
+            <Mic className="h-4 w-4 animate-pulse text-red-500" />
+            <span className="italic">{scribe.partialTranscript}</span>
+          </div>
+        )}
+
         <div className="flex gap-2">
+          <Button
+            variant={scribe.isConnected ? "destructive" : "outline"}
+            size="icon"
+            className="h-[60px] w-[60px] flex-shrink-0"
+            onClick={startListening}
+            disabled={isLoading || isConnecting}
+          >
+            {isConnecting ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : scribe.isConnected ? (
+              <MicOff className="h-5 w-5" />
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
+          </Button>
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
+            placeholder={scribe.isConnected ? "Listening..." : "Type or tap mic to speak..."}
             className="min-h-[60px] resize-none"
             disabled={isLoading}
           />
