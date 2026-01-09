@@ -32,10 +32,10 @@ serve(async (req) => {
   try {
     const body: EmailRequest = await req.json();
 
-    // Fetch order details
+    // Fetch order details (excluding email for security)
     const { data: order, error: orderError } = await sbAdmin
       .from("orders")
-      .select("*")
+      .select("id, order_token, amount_cents, currency, status")
       .eq("id", body.order_id)
       .maybeSingle();
 
@@ -43,7 +43,32 @@ serve(async (req) => {
       throw new Error(`Order not found: ${body.order_id}`);
     }
 
-    const toEmail = body.email || order.email;
+    // Get email from isolated order_emails table if not provided
+    let toEmail = body.email;
+    if (!toEmail) {
+      const { data: emailData } = await sbAdmin
+        .from("order_emails")
+        .select("email")
+        .eq("order_id", body.order_id)
+        .maybeSingle();
+      
+      if (!emailData?.email) {
+        // Fallback: check legacy email column (for migration period)
+        const { data: legacyOrder } = await sbAdmin
+          .from("orders")
+          .select("email")
+          .eq("id", body.order_id)
+          .maybeSingle();
+        toEmail = legacyOrder?.email;
+      } else {
+        toEmail = emailData.email;
+      }
+    }
+
+    if (!toEmail) {
+      throw new Error(`No email found for order: ${body.order_id}`);
+    }
+
     let subject: string;
     let html: string;
 

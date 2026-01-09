@@ -297,6 +297,12 @@ async function handleEnhancedCheckout(
     throw new Error("Failed to create order");
   }
 
+  // Insert email into isolated order_emails table
+  await sbAdmin.from("order_emails").insert({
+    order_id: order.id,
+    email: customerEmail,
+  });
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     customer_email: customerEmail,
@@ -383,6 +389,12 @@ async function handleLegacyCheckout(
     .single();
 
   if (orderError) throw new Error("Failed to create order");
+
+  // Insert email into isolated order_emails table
+  await sbAdmin.from("order_emails").insert({
+    order_id: order.id,
+    email,
+  });
 
   // Create checkout session
   const session = await stripe.checkout.sessions.create({
