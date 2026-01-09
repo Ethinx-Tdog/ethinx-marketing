@@ -487,6 +487,12 @@ copy_files() {
         cp "$SCRIPT_DIR/postal/postal.yml" "$DEPLOY_DIR/postal/"
     fi
     
+    # Copy health monitor script
+    if [[ -f "$SCRIPT_DIR/health-monitor.sh" ]]; then
+        cp "$SCRIPT_DIR/health-monitor.sh" "$DEPLOY_DIR/"
+        chmod +x "$DEPLOY_DIR/health-monitor.sh"
+    fi
+    
     print_status "Files copied to $DEPLOY_DIR"
 }
 
@@ -721,6 +727,92 @@ verify_services() {
 }
 
 # ============================================
+# Install Systemd Services
+# ============================================
+install_systemd_services() {
+    print_step "Installing Systemd Services"
+    
+    # Copy service files
+    if [[ -f "$SCRIPT_DIR/ethinx-stack.service" ]]; then
+        cp "$SCRIPT_DIR/ethinx-stack.service" /etc/systemd/system/
+        print_status "Installed ethinx-stack.service"
+    else
+        # Create inline if not present
+        cat > /etc/systemd/system/ethinx-stack.service << 'EOF'
+[Unit]
+Description=Ethinx Open-Source Stack
+After=docker.service
+Requires=docker.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/ethinx
+EnvironmentFile=/opt/ethinx/.env
+ExecStartPre=/bin/bash -c 'if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null; then echo "GPU_MODE=nvidia" > /tmp/ethinx-gpu; else echo "GPU_MODE=cpu" > /tmp/ethinx-gpu; fi'
+ExecStart=/bin/bash -c 'source /tmp/ethinx-gpu; if [ "$GPU_MODE" = "nvidia" ]; then /usr/bin/docker compose up -d; else /usr/bin/docker compose -f docker-compose.yml -f docker-compose.nogpu.yml up -d; fi'
+ExecStop=/usr/bin/docker compose down --timeout 30
+ExecReload=/usr/bin/docker compose restart
+Restart=on-failure
+RestartSec=30
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        print_status "Created ethinx-stack.service"
+    fi
+    
+    # Copy health monitor timer
+    if [[ -f "$SCRIPT_DIR/ethinx-health.service" ]]; then
+        cp "$SCRIPT_DIR/ethinx-health.service" /etc/systemd/system/
+        cp "$SCRIPT_DIR/ethinx-health.timer" /etc/systemd/system/
+    else
+        # Create health check timer inline
+        cat > /etc/systemd/system/ethinx-health.service << 'EOF'
+[Unit]
+Description=Ethinx Stack Health Check
+After=ethinx-stack.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/ethinx/health-monitor.sh
+EOF
+
+        cat > /etc/systemd/system/ethinx-health.timer << 'EOF'
+[Unit]
+Description=Run Ethinx health check every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
+EOF
+    fi
+    print_status "Installed health monitor timer"
+    
+    # Reload systemd
+    systemctl daemon-reload
+    
+    # Enable services
+    systemctl enable ethinx-stack.service
+    systemctl enable ethinx-health.timer
+    
+    # Start health timer
+    systemctl start ethinx-health.timer
+    
+    print_status "Systemd services enabled for auto-start"
+    print_info "Stack will auto-start on reboot"
+    print_info "Health checks run every 5 minutes"
+}
+
+# ============================================
 # Print Summary
 # ============================================
 print_summary() {
@@ -740,6 +832,10 @@ print_summary() {
     echo "GPU Mode: $(if [[ "$HAS_NVIDIA_GPU" == "true" ]]; then echo "NVIDIA GPU"; else echo "CPU Only"; fi)"
     echo "Log File: $LOG_FILE"
     echo ""
+    echo -e "${CYAN}Systemd Services:${NC}"
+    echo "  ethinx-stack.service    # Auto-start on boot"
+    echo "  ethinx-health.timer     # Health checks every 5min"
+    echo ""
     echo "Next Steps:"
     echo "  1. Access Uptime Kuma at http://$SERVER_IP:3001"
     echo "  2. Configure these URLs in your edge function secrets"
@@ -747,10 +843,12 @@ print_summary() {
     echo ""
     echo "Useful commands:"
     echo "  cd $DEPLOY_DIR"
-    echo "  docker compose logs -f          # View logs"
-    echo "  docker compose ps               # Check status"
-    echo "  docker compose restart          # Restart all"
-    echo "  $0 --rollback                   # Rollback deployment"
+    echo "  docker compose logs -f               # View logs"
+    echo "  docker compose ps                    # Check status"
+    echo "  systemctl status ethinx-stack        # Service status"
+    echo "  systemctl restart ethinx-stack       # Restart via systemd"
+    echo "  journalctl -u ethinx-stack -f        # View service logs"
+    echo "  $0 --rollback                        # Rollback deployment"
     echo ""
 }
 
@@ -795,6 +893,7 @@ main() {
     setup_ssl
     start_services
     setup_ollama
+    install_systemd_services
     verify_services
     print_summary
     

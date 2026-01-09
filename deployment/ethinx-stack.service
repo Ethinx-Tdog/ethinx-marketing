@@ -1,0 +1,36 @@
+[Unit]
+Description=Ethinx Open-Source Stack
+Documentation=https://github.com/ethinx/deployment
+After=docker.service
+Requires=docker.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/ethinx
+EnvironmentFile=/opt/ethinx/.env
+
+# Detect GPU and start appropriate compose configuration
+ExecStartPre=/bin/bash -c 'if command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null; then echo "GPU_MODE=nvidia" > /tmp/ethinx-gpu; else echo "GPU_MODE=cpu" > /tmp/ethinx-gpu; fi'
+
+ExecStart=/bin/bash -c 'source /tmp/ethinx-gpu; if [ "$GPU_MODE" = "nvidia" ]; then /usr/bin/docker compose up -d; else /usr/bin/docker compose -f docker-compose.yml -f docker-compose.nogpu.yml up -d; fi'
+
+ExecStop=/usr/bin/docker compose down --timeout 30
+ExecReload=/usr/bin/docker compose restart
+
+# Restart configuration
+Restart=on-failure
+RestartSec=30
+
+# Timeouts
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
