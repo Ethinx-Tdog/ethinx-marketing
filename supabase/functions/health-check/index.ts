@@ -5,10 +5,11 @@
 
 import { serve } from "../_shared/deps.ts";
 import { sbAdmin } from "../_shared/sb.ts";
+import { verifyCronSignature, unauthorizedResponse } from "../_shared/hmac.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-signature",
 };
 
 interface HealthStatus {
@@ -24,6 +25,13 @@ interface HealthStatus {
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Verify HMAC signature
+  const { valid } = await verifyCronSignature(req);
+  if (!valid) {
+    console.error("[health-check] Invalid or missing HMAC signature");
+    return unauthorizedResponse(corsHeaders);
   }
 
   const startTime = Date.now();

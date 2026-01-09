@@ -36,11 +36,16 @@
 
 import { serve } from "../_shared/deps.ts";
 import { sbAdmin } from "../_shared/sb.ts";
+import { verifyCronSignature, unauthorizedResponse } from "../_shared/hmac.ts";
 
 // Self-hosted worker endpoint (replaces Modal)
 const WORKER_URL = Deno.env.get("WORKER_URL") || "http://91.99.162.243:8080";
 const WORKER_API_KEY = Deno.env.get("WORKER_API_KEY") || "";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-signature",
+};
 
 // Log job response to history table
 async function logJobResponse(
@@ -102,7 +107,17 @@ async function recordHeartbeat(success: boolean, result: unknown) {
   }
 }
 
-serve(async () => {
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  // Verify HMAC signature
+  const { valid } = await verifyCronSignature(req);
+  if (!valid) {
+    console.error("[poll-queue] Invalid or missing HMAC signature");
+    return unauthorizedResponse(corsHeaders);
+  }
   const { data: item } = await sbAdmin
     .from("order_queue")
     .select("*")
