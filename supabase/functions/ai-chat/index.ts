@@ -12,6 +12,32 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Verify the JWT token
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { messages, includeContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -19,56 +45,84 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build context from database if requested
+    // Build context from database if requested - requires admin role
     let contextData = "";
     if (includeContext) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      // Verify admin role before loading sensitive context
+      const sbAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      
+      const { data: hasRole, error: roleError } = await sbAdmin.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
 
-      // Fetch recent queue logs
-      const { data: queueLogs } = await supabase
+      if (roleError || !hasRole) {
+        return new Response(
+          JSON.stringify({ error: "Admin access required for system context" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Fetch recent queue logs (sanitized - no sensitive data)
+      const { data: queueLogs } = await sbAdmin
         .from("order_queue")
-        .select("order_id, status, locked_until, attempt, created_at")
+        .select("order_id, status, attempts, created_at")
         .order("created_at", { ascending: false })
         .limit(20);
 
-      // Fetch recent orders
-      const { data: recentOrders } = await supabase
+      // Fetch recent orders - SANITIZED: exclude email addresses
+      const { data: recentOrders } = await sbAdmin
         .from("orders")
-        .select("id, email, status, package_name, created_at")
+        .select("id, status, package_name, created_at")
         .order("created_at", { ascending: false })
         .limit(20);
 
-      // Fetch DLQ entries (failed orders)
-      const { data: dlqEntries } = await supabase
+      // Fetch DLQ entries - SANITIZED: generic error info only
+      const { data: dlqEntries } = await sbAdmin
         .from("order_dlq")
-        .select("order_id, error_message, retries, resolved, created_at")
+        .select("order_id, retry_count, created_at")
         .order("created_at", { ascending: false })
         .limit(10);
 
-      // Fetch webhook/job errors
-      const { data: jobErrors } = await supabase
+      // Fetch job response stats - SANITIZED: no error messages
+      const { data: jobStats } = await sbAdmin
         .from("job_response_history")
-        .select("order_id, success, message, created_at")
-        .eq("success", false)
+        .select("order_id, response_status, created_at")
         .order("created_at", { ascending: false })
         .limit(10);
 
       contextData = `
-## Current System Context
+## Current System Context (Admin View)
 
 ### Recent Queue Status (last 20):
-${JSON.stringify(queueLogs || [], null, 2)}
+${JSON.stringify(queueLogs?.map(q => ({
+  order_id: q.order_id,
+  status: q.status,
+  attempts: q.attempts,
+  created_at: q.created_at
+})) || [], null, 2)}
 
 ### Recent Orders (last 20):
-${JSON.stringify(recentOrders || [], null, 2)}
+${JSON.stringify(recentOrders?.map(o => ({
+  id: o.id,
+  status: o.status,
+  package: o.package_name,
+  created_at: o.created_at
+})) || [], null, 2)}
 
 ### Dead Letter Queue (failed orders):
-${JSON.stringify(dlqEntries || [], null, 2)}
+${JSON.stringify(dlqEntries?.map(d => ({
+  order_id: d.order_id,
+  retries: d.retry_count,
+  created_at: d.created_at
+})) || [], null, 2)}
 
-### Recent Webhook Errors:
-${JSON.stringify(jobErrors || [], null, 2)}
+### Recent Job Status:
+${JSON.stringify(jobStats?.map(j => ({
+  order_id: j.order_id,
+  status: j.response_status,
+  created_at: j.created_at
+})) || [], null, 2)}
 `;
     }
 
