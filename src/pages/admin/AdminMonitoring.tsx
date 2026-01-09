@@ -12,7 +12,9 @@ import {
   Zap,
   Server,
   LogOut,
+  Bot,
 } from "lucide-react";
+import { AIVoiceChat } from "@/components/AIVoiceChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -492,6 +494,19 @@ export default function AdminMonitoring() {
                 </Table>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* ETHINX AI Agent */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              ETHINX Agent
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AIVoiceChat />
           </CardContent>
         </Card>
 
