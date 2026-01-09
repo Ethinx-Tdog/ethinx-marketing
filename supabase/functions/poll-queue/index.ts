@@ -67,6 +67,39 @@ async function logJobResponse(
   }
 }
 
+// Record heartbeat for monitoring
+async function recordHeartbeat(success: boolean, result: unknown) {
+  try {
+    // Fetch current stats
+    const { data: current } = await sbAdmin
+      .from("cron_heartbeats")
+      .select("consecutive_failures, total_failures, total_runs")
+      .eq("function_name", "poll-queue")
+      .single();
+
+    const updateData: Record<string, unknown> = {
+      last_beat_at: new Date().toISOString(),
+      last_result: result,
+      total_runs: (current?.total_runs || 0) + 1,
+    };
+
+    if (success) {
+      updateData.consecutive_failures = 0;
+      updateData.status = "healthy";
+    } else {
+      updateData.consecutive_failures = (current?.consecutive_failures || 0) + 1;
+      updateData.total_failures = (current?.total_failures || 0) + 1;
+    }
+
+    await sbAdmin
+      .from("cron_heartbeats")
+      .update(updateData)
+      .eq("function_name", "poll-queue");
+  } catch (err) {
+    console.error("Failed to record heartbeat:", err);
+  }
+}
+
 serve(async () => {
   const { data: item } = await sbAdmin
     .from("order_queue")
@@ -77,6 +110,7 @@ serve(async () => {
     .single();
 
   if (!item) {
+    await recordHeartbeat(true, { idle: true });
     return new Response(JSON.stringify({ idle: true }), {
       headers: { "Content-Type": "application/json" },
     });
@@ -134,6 +168,7 @@ serve(async () => {
       .eq("id", item.id);
 
     console.log(`[RETRY] Order ${orderId} - Status ${res.status}, Attempt ${item.attempts + 1}`);
+    await recordHeartbeat(false, { retry: true, order_id: orderId, status: res.status });
 
     return new Response(
       JSON.stringify({ retry: true, reason: `Status ${res.status}`, delay: 60, attempt: item.attempts + 1 }),
@@ -162,6 +197,7 @@ serve(async () => {
       .eq("id", item.id);
 
     console.log(`[FAILED] Order ${orderId} - Status ${res.status}`);
+    await recordHeartbeat(false, { failed: true, order_id: orderId, status: res.status });
 
     return new Response(
       JSON.stringify({ retry: false, reason: `Status ${res.status}` }),
@@ -187,6 +223,7 @@ serve(async () => {
     .eq("id", item.id);
 
   console.log(`[SUCCESS] Order ${orderId} dispatched to Modal in ${durationMs}ms`);
+  await recordHeartbeat(true, { success: true, order_id: orderId, duration_ms: durationMs });
 
   return new Response(
     JSON.stringify({ success: true, dispatched: item.id, duration_ms: durationMs }),

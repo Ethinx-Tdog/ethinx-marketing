@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.retry-dlq]
 verify_jwt = false
+
+[functions.cron-monitor]
+verify_jwt = false
