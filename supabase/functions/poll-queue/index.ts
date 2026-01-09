@@ -1,7 +1,7 @@
 /**
  * poll-queue Edge Function
  *
- * Polls the order_queue table for queued jobs and dispatches them to Modal.
+ * Polls the order_queue table for queued jobs and dispatches them to the Worker API.
  * Should be invoked periodically via cron or external scheduler.
  *
  * CRON CONFIGURATION:
@@ -10,11 +10,11 @@
  * Method: POST
  * Schedule: *\/1 * * * * (every minute)
  *
- * Recommended services: cron-job.org, EasyCron, GitHub Actions, or Modal scheduled functions
+ * Recommended services: cron-job.org, EasyCron, GitHub Actions, or Uptime Kuma
  *
- * MODAL ENDPOINT CONTRACT:
- * -------------------------
- * POST https://<your-modal-app>.modal.run/generate
+ * WORKER ENDPOINT CONTRACT (Self-Hosted):
+ * ----------------------------------------
+ * POST http://91.99.162.243:8080/jobs/enqueue
  *
  * Request Payload (from order_queue.payload):
  * {
@@ -29,16 +29,18 @@
  *   "zip_path": "orders/zips/<order_token>.zip"
  * }
  *
- * Expected Response: 200 OK (processing started)
+ * Expected Response: 200 OK with { "job_id": "..." }
  *
- * Modal should callback to finalize-order when complete.
+ * Worker should callback to finalize-order when complete.
  */
 
 import { serve } from "../_shared/deps.ts";
 import { sbAdmin } from "../_shared/sb.ts";
 
-const MODAL_ENDPOINT = Deno.env.get("MODAL_ENDPOINT")!;
-const MODAL_WEBHOOK_SECRET = Deno.env.get("MODAL_WEBHOOK_SECRET")!;
+// Self-hosted worker endpoint (replaces Modal)
+const WORKER_URL = Deno.env.get("WORKER_URL") || "http://91.99.162.243:8080";
+const WORKER_API_KEY = Deno.env.get("WORKER_API_KEY") || "";
+
 
 // Log job response to history table
 async function logJobResponse(
@@ -126,11 +128,12 @@ serve(async () => {
   const startTime = Date.now();
   let responseBody: unknown = null;
 
-  const res = await fetch(MODAL_ENDPOINT, {
+  // Dispatch to self-hosted worker API
+  const res = await fetch(`${WORKER_URL}/jobs/enqueue`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${MODAL_WEBHOOK_SECRET}`,
+      ...(WORKER_API_KEY ? { "X-API-Key": WORKER_API_KEY } : {}),
     },
     body: JSON.stringify(item.payload),
   });
@@ -254,7 +257,7 @@ serve(async () => {
     .update({ status: "processing" })
     .eq("id", item.id);
 
-  console.log(`[SUCCESS] Order ${orderId} dispatched to Modal in ${durationMs}ms`);
+  console.log(`[SUCCESS] Order ${orderId} dispatched to Worker in ${durationMs}ms`);
   await recordHeartbeat(true, { success: true, order_id: orderId, duration_ms: durationMs });
 
   return new Response(
