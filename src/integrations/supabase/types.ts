@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      job_response_history: {
+        Row: {
+          attempt_number: number
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          order_id: string
+          queue_id: string | null
+          response_body: Json | null
+          response_code: number | null
+          response_status: string
+        }
+        Insert: {
+          attempt_number?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          order_id: string
+          queue_id?: string | null
+          response_body?: Json | null
+          response_code?: number | null
+          response_status: string
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          order_id?: string
+          queue_id?: string | null
+          response_body?: Json | null
+          response_code?: number | null
+          response_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_response_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_response_history_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "order_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_dlq: {
         Row: {
           created_at: string
