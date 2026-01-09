@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.health-check]
 verify_jwt = false
+
+[functions.deduct-credits]
+verify_jwt = false
