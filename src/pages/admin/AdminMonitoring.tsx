@@ -52,10 +52,23 @@ interface JobResponse {
   created_at: string;
 }
 
+interface HealthCheck {
+  status: "healthy" | "degraded" | "unhealthy";
+  timestamp: string;
+  response_time_ms: number;
+  checks: {
+    database: { status: string; latency_ms?: number; error?: string };
+    cron_jobs: { status: string; healthy: number; warning: number; critical: number };
+    queue: { status: string; pending: number; processing: number; failed: number };
+  };
+}
+
 export default function AdminMonitoring() {
   const { signOut } = useAuth();
   const [heartbeats, setHeartbeats] = useState<Heartbeat[]>([]);
   const [jobHistory, setJobHistory] = useState<JobResponse[]>([]);
+  const [healthCheck, setHealthCheck] = useState<HealthCheck | null>(null);
+  const [healthLoading, setHealthLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -87,16 +100,36 @@ export default function AdminMonitoring() {
     }
   };
 
+  const fetchHealthCheck = async () => {
+    setHealthLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/health-check`
+      );
+      const data = await response.json();
+      setHealthCheck(data);
+    } catch (err) {
+      console.error("Failed to fetch health check:", err);
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchHealthCheck();
     // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(() => {
+      fetchData();
+      fetchHealthCheck();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData();
+    fetchHealthCheck();
   };
 
   const getStatusIcon = (status: string) => {
@@ -190,6 +223,105 @@ export default function AdminMonitoring() {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Real-time Health Check Widget */}
+        <Card className={cn(
+          "border-2",
+          healthCheck?.status === "healthy" && "border-green-500/50 bg-green-500/5",
+          healthCheck?.status === "degraded" && "border-yellow-500/50 bg-yellow-500/5",
+          healthCheck?.status === "unhealthy" && "border-red-500/50 bg-red-500/5"
+        )}>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                System Health
+              </div>
+              {healthLoading ? (
+                <Badge variant="outline">Loading...</Badge>
+              ) : healthCheck ? (
+                <Badge 
+                  variant={healthCheck.status === "healthy" ? "default" : healthCheck.status === "degraded" ? "secondary" : "destructive"}
+                  className="capitalize"
+                >
+                  {healthCheck.status}
+                </Badge>
+              ) : (
+                <Badge variant="outline">Unknown</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {healthCheck ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Database Status */}
+                <div className="p-3 rounded-lg bg-background border">
+                  <div className="flex items-center gap-2 mb-1">
+                    {healthCheck.checks.database.status === "healthy" ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                    <span className="text-sm font-medium">Database</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {healthCheck.checks.database.latency_ms 
+                      ? `${healthCheck.checks.database.latency_ms}ms latency`
+                      : healthCheck.checks.database.error || "Unknown"
+                    }
+                  </div>
+                </div>
+
+                {/* Cron Jobs Status */}
+                <div className="p-3 rounded-lg bg-background border">
+                  <div className="flex items-center gap-2 mb-1">
+                    {healthCheck.checks.cron_jobs.status === "healthy" ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : healthCheck.checks.cron_jobs.status === "degraded" ? (
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                    <span className="text-sm font-medium">Cron Jobs</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {healthCheck.checks.cron_jobs.healthy} healthy, {healthCheck.checks.cron_jobs.warning} warning, {healthCheck.checks.cron_jobs.critical} critical
+                  </div>
+                </div>
+
+                {/* Queue Status */}
+                <div className="p-3 rounded-lg bg-background border">
+                  <div className="flex items-center gap-2 mb-1">
+                    {healthCheck.checks.queue.status === "healthy" ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    )}
+                    <span className="text-sm font-medium">Job Queue</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {healthCheck.checks.queue.pending} pending, {healthCheck.checks.queue.processing} processing, {healthCheck.checks.queue.failed} failed
+                  </div>
+                </div>
+
+                {/* Response Time */}
+                <div className="p-3 rounded-lg bg-background border">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Response Time</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {healthCheck.response_time_ms}ms
+                  </div>
+                </div>
+              </div>
+            ) : healthLoading ? (
+              <div className="text-center py-4 text-muted-foreground">Loading health data...</div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">Unable to fetch health status</div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
