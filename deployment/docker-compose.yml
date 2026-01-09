@@ -1,0 +1,221 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # Piper TTS - Text-to-Speech
+  # ============================================
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: piper-tts
+    restart: unless-stopped
+    ports:
+      - "10200:10200"
+    volumes:
+      - piper-data:/data
+    environment:
+      - PIPER_VOICE=en_US-lessac-medium
+      - PIPER_SPEAKER=0
+      - PIPER_LENGTH_SCALE=1.0
+      - PIPER_NOISE_SCALE=0.667
+      - PIPER_NOISE_W=0.8
+    command: --voice en_US-lessac-medium
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "10200"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # Whisper STT - Speech-to-Text
+  # ============================================
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    container_name: whisper-stt
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      - ASR_MODEL=base
+      - ASR_ENGINE=openai_whisper
+    volumes:
+      - whisper-cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # Ollama - Local LLM Server
+  # ============================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-llm
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ============================================
+  # Redis - Job Queue Backend
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis-queue
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ============================================
+  # FastAPI Worker - Job Queue Processor
+  # ============================================
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: fastapi-worker
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - OLLAMA_URL=http://ollama:11434
+      - PIPER_URL=http://piper:10200
+      - WHISPER_URL=http://whisper:9000
+      - WORKER_CONCURRENCY=4
+    depends_on:
+      - redis
+      - ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # Postal - Email Server (Simplified Setup)
+  # ============================================
+  postal-smtp:
+    image: docker.io/postalserver/postal:3
+    container_name: postal-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+      - "25:25"
+      - "587:587"
+    volumes:
+      - postal-data:/opt/postal/storage
+      - ./postal/postal.yml:/opt/postal/config/postal.yml:ro
+    environment:
+      - POSTAL_WEB_PROTOCOL=http
+      - POSTAL_WEB_HOST=${SERVER_IP}
+      - POSTAL_WEB_PORT=5000
+    depends_on:
+      - postal-db
+      - postal-redis
+
+  postal-db:
+    image: mariadb:10.11
+    container_name: postal-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${POSTAL_DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=postal
+    volumes:
+      - postal-db-data:/var/lib/mysql
+
+  postal-redis:
+    image: redis:7-alpine
+    container_name: postal-redis
+    restart: unless-stopped
+    volumes:
+      - postal-redis-data:/data
+
+  # ============================================
+  # Uptime Kuma - Monitoring Dashboard
+  # ============================================
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - kuma-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # Nginx Reverse Proxy with SSL
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      - piper
+      - whisper
+      - ollama
+      - worker
+      - uptime-kuma
+
+  # ============================================
+  # Certbot - Let's Encrypt SSL
+  # ============================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  piper-data:
+  whisper-cache:
+  ollama-data:
+  redis-data:
+  postal-data:
+  postal-db-data:
+  postal-redis-data:
+  kuma-data:
+  certbot-webroot:
+  certbot-certs:
+
+networks:
+  default:
+    name: openstack-network

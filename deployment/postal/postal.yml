@@ -1,0 +1,49 @@
+# Postal configuration file
+# Place this at /opt/postal/config/postal.yml in the container
+
+web:
+  host: 0.0.0.0
+  port: 5000
+
+main_db:
+  host: postal-db
+  port: 3306
+  username: root
+  password: <%= ENV['POSTAL_DB_ROOT_PASSWORD'] %>
+  database: postal
+
+message_db:
+  host: postal-db
+  port: 3306
+  username: root
+  password: <%= ENV['POSTAL_DB_ROOT_PASSWORD'] %>
+  prefix: postal
+
+logging:
+  stdout: true
+  
+rails:
+  environment: production
+  secret_key: <%= SecureRandom.hex(64) %>
+
+smtp:
+  host: 0.0.0.0
+  port: 25
+  tls_enabled: false
+
+smtp_relays:
+  - hostname: localhost
+    port: 25
+    ssl_mode: Auto
+
+dns:
+  mx_records:
+    - mx.postal.local
+  smtp_server_hostname: postal.local
+  spf_include: spf.postal.local
+  return_path: rp.postal.local
+  route_domain: routes.postal.local
+  track_domain: track.postal.local
+  
+fast_server:
+  enabled: false
