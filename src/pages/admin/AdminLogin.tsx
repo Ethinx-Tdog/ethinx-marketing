@@ -61,15 +61,29 @@ export default function AdminLogin() {
       }
 
       setIsSubmitting(true);
-      const { error } = await signUp(email, password);
+      console.log("[AdminLogin] Attempting signup for:", email);
+      
+      const { error, user: newUser } = await signUp(email, password);
+      console.log("[AdminLogin] Signup result:", { error, newUser });
+      
       setIsSubmitting(false);
 
       if (error) {
+        console.error("[AdminLogin] Signup error:", error);
         toast.error(error.message || "Failed to create account");
+      } else if (newUser) {
+        console.log("[AdminLogin] User created:", newUser.id);
+        toast.success("Account created! Signing you in...");
+        // Auto-confirm is enabled, so try to sign in immediately
+        const { error: signInError } = await signIn(email, password);
+        if (signInError) {
+          console.error("[AdminLogin] Auto sign-in failed:", signInError);
+          toast.error("Account created but sign-in failed. Please try signing in manually.");
+          setMode("login");
+        }
       } else {
-        toast.success("Account created! You can now sign in.");
-        setMode("login");
-        setConfirmPassword("");
+        console.warn("[AdminLogin] No error but no user returned");
+        toast.error("Signup returned no user. Please try again.");
       }
     } else {
       setIsSubmitting(true);
