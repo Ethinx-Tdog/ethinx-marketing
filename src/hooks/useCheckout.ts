@@ -76,6 +76,10 @@ export function useCheckout() {
   const redirectToCheckout = async (params: CheckoutParams): Promise<void> => {
     const result = await createCheckout(params);
     if (result?.url) {
+      toast({
+        title: "Redirecting to Checkout",
+        description: "Opening secure payment page...",
+      });
       window.open(result.url, "_blank");
     }
   };
