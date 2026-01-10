@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentPromoGroup } from "@/lib/promo-ab";
+import { toast } from "@/hooks/use-toast";
 import type { PackageId, UpsellId } from "@/lib/pricing-config";
 
 interface CheckoutParams {
@@ -61,6 +62,11 @@ export function useCheckout() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Checkout failed";
       setError(message);
+      toast({
+        title: "Checkout Error",
+        description: message,
+        variant: "destructive",
+      });
       return null;
     } finally {
       setIsLoading(false);
