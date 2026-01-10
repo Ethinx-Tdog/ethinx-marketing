@@ -63,8 +63,17 @@ serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
-  const origin = req.headers.get("Origin");
+  const origin = req.headers.get("Origin") || req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
+
+  // Validate origin for redirect URLs
+  if (!origin) {
+    console.error("Missing request origin header");
+    return new Response(
+      JSON.stringify({ error: "Missing request origin; cannot build redirect URLs." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+    );
+  }
 
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
@@ -107,16 +116,16 @@ serve(async (req) => {
 
     // Handle credit pack purchases
     if (type === "credit_pack") {
-      return await handleCreditPackPurchase(body, req, corsHeaders);
+      return await handleCreditPackPurchase(body, req, corsHeaders, origin);
     }
 
     // Handle enhanced checkout with plan + add-ons
     if (body.order_data || body.plan_id) {
-      return await handleEnhancedCheckout(body, corsHeaders);
+      return await handleEnhancedCheckout(body, corsHeaders, origin);
     }
 
     // Default: handle legacy package checkout
-    return await handleLegacyCheckout(body, corsHeaders);
+    return await handleLegacyCheckout(body, corsHeaders, origin);
   } catch (error) {
     const message = error instanceof Error ? error.message : "An error occurred";
     console.error("Checkout error:", message);
@@ -136,7 +145,8 @@ async function handleCreditPackPurchase(
     cancel_url?: string;
   },
   req: Request,
-  corsHeaders: Record<string, string>
+  corsHeaders: Record<string, string>,
+  origin: string
 ) {
   const { credit_pack_id, success_url, cancel_url } = body;
 
@@ -186,8 +196,8 @@ async function handleCreditPackPurchase(
       credits: String(creditPack.credits),
       credit_pack_id,
     },
-    success_url: success_url || `${env.SITE_URL}/credits/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: cancel_url || `${env.SITE_URL}/credits`,
+    success_url: success_url || `${origin}/credits/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: cancel_url || `${origin}/credits`,
   });
 
   return new Response(
@@ -206,7 +216,8 @@ async function handleEnhancedCheckout(
     success_url?: string;
     cancel_url?: string;
   },
-  corsHeaders: Record<string, string>
+  corsHeaders: Record<string, string>,
+  origin: string
 ) {
   const { order_data, plan_id, add_on_ids, email, success_url, cancel_url } = body;
 
@@ -315,8 +326,8 @@ async function handleEnhancedCheckout(
       plan_id: plan_id || (order_data?.plan_id as string) || "",
       add_ons: validAddOns.join(","),
     },
-    success_url: success_url || `${env.SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: cancel_url || `${env.SITE_URL}/checkout/cancel`,
+    success_url: success_url || `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: cancel_url || `${origin}/checkout/cancel`,
   });
 
   await sbAdmin.from("orders").update({ stripe_session_id: session.id }).eq("id", order.id);
@@ -336,7 +347,8 @@ async function handleLegacyCheckout(
     promo_code?: string;
     source_page?: string;
   },
-  corsHeaders: Record<string, string>
+  corsHeaders: Record<string, string>,
+  origin: string
 ) {
   const { email, package_name = "starter", upsell_ids, promo_code, source_page } = body;
 
@@ -408,8 +420,8 @@ async function handleLegacyCheckout(
       package_name,
       upsell_ids: validUpsells.join(","),
     },
-    success_url: `${env.SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${env.SITE_URL}/checkout/cancel`,
+    success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/checkout/cancel`,
   });
 
   await sbAdmin.from("orders").update({ stripe_session_id: session.id }).eq("id", order.id);
