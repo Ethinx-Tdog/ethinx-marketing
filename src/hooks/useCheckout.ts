@@ -32,10 +32,12 @@ export function useCheckout() {
 
       const { data, error: fnError } = await supabase.functions.invoke("create-checkout", {
         body: {
-          ...params,
-          promoGroup,
-          promoVariant,
-          sourcePage,
+          email: params.email,
+          package_name: params.packageId,
+          upsell_ids: params.upsellIds || [],
+          photo_files: params.photoFiles || [],
+          promo_code: promoVariant,
+          source_page: sourcePage,
         },
       });
 
