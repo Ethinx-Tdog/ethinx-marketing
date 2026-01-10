@@ -74,13 +74,32 @@ export function useCheckout() {
   };
 
   const redirectToCheckout = async (params: CheckoutParams): Promise<void> => {
+    // Pre-open tab immediately to avoid popup blocking (async calls break the user gesture chain)
+    const newTab = window.open("about:blank", "_blank");
+    
     const result = await createCheckout(params);
+    
     if (result?.url) {
-      toast({
-        title: "Redirecting to Checkout",
-        description: "Opening secure payment page...",
-      });
-      window.open(result.url, "_blank");
+      if (newTab && !newTab.closed) {
+        // Navigate the pre-opened tab to Stripe
+        newTab.location.href = result.url;
+        toast({
+          title: "Redirecting to Checkout",
+          description: "Opening secure payment page...",
+        });
+      } else {
+        // Fallback: popup was blocked, redirect in same tab
+        toast({
+          title: "Opening Checkout",
+          description: "Redirecting to payment page...",
+        });
+        window.location.href = result.url;
+      }
+    } else {
+      // Checkout failed - close the blank tab if it exists
+      if (newTab && !newTab.closed) {
+        newTab.close();
+      }
     }
   };
 
