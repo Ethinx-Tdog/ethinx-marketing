@@ -12,7 +12,7 @@ const ACTIVE = [
   { code: "SAVE15", pct: 15, variant: "default" },
 ];
 
-serve((req) => {
+serve(async (req) => {
   // Handle CORS
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -41,13 +41,24 @@ serve((req) => {
     );
   }
 
-  const url = new URL(req.url);
-  const rawCode = url.searchParams.get("code") || "";
+  // Support both GET (query param) and POST (body)
+  let rawCode = "";
+  if (req.method === "POST") {
+    try {
+      const body = await req.json();
+      rawCode = body.promoCode || body.code || "";
+    } catch {
+      rawCode = "";
+    }
+  } else {
+    const url = new URL(req.url);
+    rawCode = url.searchParams.get("code") || "";
+  }
   
   // Validate promo code format
   const validation = validatePromoCode(rawCode);
   if (!validation.success) {
-    return new Response(JSON.stringify(null), {
+    return new Response(JSON.stringify({ valid: false, message: "Invalid code format" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -55,7 +66,18 @@ serve((req) => {
   const code = validation.data!;
   const hit = ACTIVE.find((x) => x.code === code);
 
-  return new Response(JSON.stringify(hit ?? null), {
+  if (hit) {
+    return new Response(JSON.stringify({
+      valid: true,
+      code: hit.code,
+      discountPercent: hit.pct,
+      discountLabel: `${hit.pct}% off`,
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify({ valid: false, message: "Invalid promo code" }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
