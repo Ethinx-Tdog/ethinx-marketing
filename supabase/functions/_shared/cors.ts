@@ -8,10 +8,18 @@ export const ALLOWED_ORIGINS = [
 ];
 
 export function getCorsHeaders(origin?: string | null): Record<string, string> {
-  // Check if origin is allowed
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) 
+  // Check if origin is in static allowed list
+  const isStaticAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+  
+  // Allow Lovable preview domains dynamically
+  const isLovablePreview = origin && (
+    origin.endsWith(".lovable.app") || 
+    origin.endsWith(".lovableproject.com")
+  );
+  
+  const allowedOrigin = (isStaticAllowed || isLovablePreview) 
     ? origin 
-    : ALLOWED_ORIGINS[0]; // Default to primary production domain
+    : ALLOWED_ORIGINS[0];
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
