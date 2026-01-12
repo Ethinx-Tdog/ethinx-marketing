@@ -13,15 +13,15 @@ import {
 
 // Existing package price IDs
 const PRICE_MAP: Record<string, string> = {
-  starter: "price_1Sn99qIik4hNc65MeXyOPCav",
-  professional: "price_1Sn9FfIik4hNc65MloNhA1cw",
-  ultimate: "price_1Sn9FgIik4hNc65MuFz9rADz",
-  real_estate: "price_1Sn9FiIik4hNc65M5T9WkKII",
-  tradie: "price_1Sn9FjIik4hNc65Ms1jcrLpD",
-  healthcare: "price_1Sn9FlIik4hNc65MHWcp6RVS",
-  creative: "price_1Sn9FmIik4hNc65Miij45gjR",
-  bio_suite: "price_1Sn9FnIik4hNc65MVqXsOdkn",
-  rush_3h: "price_1Sn9FoIik4hNc65MoJOmWk0L",
+  starter: "price_1SohUUIwTiWWr9XU5SNJ6KcB",
+  professional: "price_1SohUWIwTiWWr9XUYrBUB5RF",
+  ultimate: "price_1SohUYIwTiWWr9XU2FI7f4mA",
+  real_estate: "price_1SohUZIwTiWWr9XUm3XN8J2u",
+  tradie: "price_1SohUbIwTiWWr9XUgOp2MHdW",
+  healthcare: "price_1SohUdIwTiWWr9XUqxu3VCq5",
+  creative: "price_1SohUeIwTiWWr9XUgCQnOxZP",
+  bio_suite: "price_1SohUgIwTiWWr9XUL4Agnv9h",
+  rush_3h: "price_1SohUhIwTiWWr9XUWNVNnsOX",
 };
 
 const PACKAGE_PHOTOS: Record<string, number> = {
