@@ -45,7 +45,11 @@ export const trackPromoEvent = async (
       payload.order_id = orderId;
     }
 
-    const { error } = await supabase.from("promo_events").insert(payload);
+    // Use secure edge function instead of direct DB insert
+    // This provides server-side validation and rate limiting
+    const { error } = await supabase.functions.invoke("track-promo", {
+      body: payload,
+    });
 
     if (error) {
       console.error("[PromoAnalytics] Failed to track event:", error.message);
