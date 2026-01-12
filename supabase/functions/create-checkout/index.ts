@@ -289,11 +289,10 @@ async function handleEnhancedCheckout(
     throw new Error("Valid email is required");
   }
 
-  // Create order record
+  // Create order record (email stored separately in order_emails table)
   const { data: order, error: orderError } = await sbAdmin
     .from("orders")
     .insert({
-      email: customerEmail,
       plan_id: plan_id || (order_data?.plan_id as string) || null,
       amount_cents: totalCents,
       currency: "aud",
@@ -384,11 +383,10 @@ async function handleLegacyCheckout(
     ? promo_code.toUpperCase().replace(/[^A-Z0-9_-]/g, "") 
     : null;
 
-  // Create order
+  // Create order (email stored separately in order_emails table)
   const { data: order, error: orderError } = await sbAdmin
     .from("orders")
     .insert({
-      email,
       package_name,
       photo_count: PACKAGE_PHOTOS[package_name] || 0,
       amount_cents: totalCents,
