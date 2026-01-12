@@ -45,6 +45,9 @@ verify_jwt = false
 [functions.validate-promo]
 verify_jwt = false
 
+[functions.track-promo]
+verify_jwt = false
+
 [functions.get-signed-url]
 verify_jwt = false
 
@@ -52,4 +55,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.admin-role-notify]
+verify_jwt = false
+
+[functions.create-credit-order]
 verify_jwt = false

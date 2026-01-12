@@ -94,37 +94,41 @@ export default function EnhancedCheckout({ userId, initialOrderData }: EnhancedC
         },
       };
 
-      // If paying fully with credits
+      // If paying fully with credits - use secure edge function
       if (useCredits && userCredits >= creditsNeeded && totalCents > 0) {
-        // Use edge function to deduct credits securely
-        const { error: creditError } = await supabase.functions.invoke("deduct-credits", {
-          body: {
-            amount: creditsNeeded,
-            description: `Order: ${selectedPlan.name}`,
-          },
-        });
+        // Get user email from auth session
+        const { data: { session } } = await supabase.auth.getSession();
+        const userEmail = session?.user?.email;
 
-        if (creditError) {
-          throw new Error("Failed to deduct credits");
+        if (!userEmail) {
+          throw new Error("Please log in to use credits");
         }
 
-        orderData.used_credits = creditsNeeded;
-        orderData.amount_cents = 0;
+        // Call secure edge function instead of direct DB insert
+        const { data: creditOrderResult, error: creditOrderError } = await supabase.functions.invoke(
+          "create-credit-order",
+          {
+            body: {
+              plan_id: selectedPlan.id,
+              add_on_ids: selectedAddOns.map((a) => a.id),
+              email: userEmail,
+            },
+          }
+        );
 
-        // Create order directly without Stripe
-        const { error: orderError } = await supabase.from("orders").insert({
-          email: "", // Will need user email
-          amount_cents: 0,
-          status: "paid",
-          package_name: selectedPlan.id,
-          used_credits: creditsNeeded,
-          plan_id: selectedPlan.id,
+        if (creditOrderError) {
+          throw new Error(creditOrderError.message || "Failed to create order");
+        }
+
+        if (!creditOrderResult?.success) {
+          throw new Error(creditOrderResult?.error || "Order creation failed");
+        }
+
+        toast({ 
+          title: "Order completed!", 
+          description: `Used ${creditOrderResult.credits_used} credits. ${creditOrderResult.remaining_credits} remaining.` 
         });
-
-        if (orderError) throw orderError;
-
-        toast({ title: "Order completed!", description: `Used ${creditsNeeded} credits` });
-        window.location.href = "/checkout/success";
+        window.location.href = `/order/${creditOrderResult.order_token}`;
         return;
       }
 
