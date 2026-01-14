@@ -1,11 +1,21 @@
 // Production CORS configuration
-export const ALLOWED_ORIGINS = [
+const PRODUCTION_ORIGINS = [
   "https://studio.ethinx.solutions",
   "https://ethinx.solutions",
-  // Development origins (can be removed in production)
+];
+
+const DEV_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:3000",
 ];
+
+// Only include dev origins in non-production environments
+const isProduction = Deno.env.get("ENVIRONMENT") === "production" || 
+  !Deno.env.get("ENVIRONMENT"); // Default to production if not set
+
+export const ALLOWED_ORIGINS = isProduction 
+  ? PRODUCTION_ORIGINS 
+  : [...PRODUCTION_ORIGINS, ...DEV_ORIGINS];
 
 export function getCorsHeaders(origin?: string | null): Record<string, string> {
   // Check if origin is in static allowed list
