@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, Lock, BadgeCheck, ArrowRight, Star } from "lucide-react";
 import TrustStrip from "@/components/TrustStrip";
@@ -15,61 +14,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 export default function Index() {
   // Pick 3 sample transformations for homepage
   const sampleTransformations = featuredExamples.slice(0, 3);
-  // --- ETHINX BRIDGE START ---
-  useEffect(() => {
-    // 1. Define the Checkout Logic
-    const API_URL = "http://localhost:8000"; // Docker Backend URL
-
-    async function triggerCheckout(offerKey: string) {
-      try {
-        console.log("Initiating checkout for:", offerKey);
-        const response = await fetch(`${API_URL}/checkout/session`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            offer_key: offerKey,
-            email: "guest@ethinx.com",
-          }),
-        });
-
-        const data = await response.json();
-        if (data.checkout_url) {
-          window.location.href = data.checkout_url;
-        } else {
-          alert("Checkout Error: " + (data.detail || "Unknown error"));
-        }
-      } catch (error) {
-        console.error("Payment failed:", error);
-        alert("Connection Error. Is Docker running?");
-      }
-    }
-
-    // 2. Attach to Buttons (Wait 1s for layout to load)
-    const timer = setTimeout(() => {
-      // Map your Button IDs to Stripe Keys here
-      const products: Record<string, string> = {
-        "buy-rush-3h": "rush_3h",
-        "buy-bio-suite": "bio_suite",
-        "buy-creative": "creative_studio",
-      };
-
-      Object.keys(products).forEach((id) => {
-        const btn = document.getElementById(id);
-        if (btn) {
-          console.log("Attached checkout to:", id);
-          // Clone to remove old listeners (safety)
-          const newBtn = btn.cloneNode(true);
-          btn.parentNode?.replaceChild(newBtn, btn);
-          newBtn.addEventListener("click", () => triggerCheckout(products[id]));
-        } else {
-          console.warn("Could not find button with ID:", id);
-        }
-      });
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-  // --- ETHINX BRIDGE END ---
 
   return (
     <main>
