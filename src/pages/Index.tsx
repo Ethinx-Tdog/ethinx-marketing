@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, Lock, BadgeCheck, ArrowRight, Star } from "lucide-react";
 import TrustStrip from "@/components/TrustStrip";
