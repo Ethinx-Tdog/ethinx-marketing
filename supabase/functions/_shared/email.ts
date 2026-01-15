@@ -91,7 +91,7 @@ export async function sendAdminAlert(subject: string, html: string) {
   const adminEmail = env.ADMIN_EMAIL;
   
   // Send Slack alert (always attempt - will skip if not configured)
-  const slackMessage = `${subject}\n${html.replace(/<[^>]*>/g, '').slice(0, 500)}`;
+  const slackMessage = `${subject}\n${html.replace(/[<>]/g, '').slice(0, 500)}`;
   await sendSlackAlert(slackMessage);
   
   if (!adminEmail) {
