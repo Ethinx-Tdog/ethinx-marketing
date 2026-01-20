@@ -175,7 +175,7 @@ async function handleCreditPackPurchase(
   }
 
   const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
+    payment_method_types: ["card", "apple_pay", "google_pay"],
     mode: "payment",
     customer_email: userEmail || undefined,
     line_items: [
@@ -315,7 +315,7 @@ async function handleEnhancedCheckout(
   });
 
   const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
+    payment_method_types: ["card", "apple_pay", "google_pay"],
     mode: "payment",
     customer_email: customerEmail,
     line_items: lineItems,
@@ -410,7 +410,7 @@ async function handleLegacyCheckout(
 
   // Create checkout session
   const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
+    payment_method_types: ["card", "apple_pay", "google_pay"],
     mode: "payment",
     customer_email: email,
     line_items: lineItems,
