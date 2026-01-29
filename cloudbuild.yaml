@@ -1,26 +1,39 @@
 steps:
-  # Build the container image
+  # Step 1: Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'australia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ethinx-marketing', '.']
+    id: 'Build Image'
+    args: 
+      - 'build'
+      - '-t'
+      - 'australia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ethinx-marketing:$COMMIT_SHA'
+      - '.'
 
-  # Push the image to Artifact Registry
+  # Step 2: Push the image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'australia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ethinx-marketing']
+    id: 'Push Image'
+    args: 
+      - 'push'
+      - 'australia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ethinx-marketing:$COMMIT_SHA'
 
-  # Deploy to Cloud Run
+  # Step 3: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy to Cloud Run'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'ethinx-marketing'
       - '--image'
-      - 'australia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ethinx-marketing'
+      - 'australia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ethinx-marketing:$COMMIT_SHA'
       - '--region'
       - 'australia-southeast1'
       - '--allow-unauthenticated'
       - '--port'
       - '8080'
 
+# Use CLOUD_LOGGING_ONLY to bypass the "no bucket" security error
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 images:
-  - 'australia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ethinx-marketing'
+  - 'australia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/ethinx-marketing:$COMMIT_SHA'
